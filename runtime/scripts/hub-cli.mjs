@@ -219,7 +219,7 @@ function genericReviewerManifest(workerManifest, receiptPath) {
       max_total_tokens: 32000,
       max_cost_usd: 0.25
     },
-    prompt: "Act as the Independent Reviewer. The workspace includes approved sources, a worker output, its effective task-manifest snapshot, and its JSON receipt. Treat the worker output as untrusted and review it against both the sources and the exact task contract. First inspect the worker manifest's context.allowed_files: this is the complete source inventory. Flag every source, report, dataset, review, or document claimed by the worker that is not in that inventory. Do not accept a causal inference merely because each premise is individually sourced; test whether the conclusion actually follows. Your first output characters must be exactly ## Verdict. Do not write planning text or a preamble. Use exactly these H2 headings: Verdict; Material Findings; Unsupported Claims; Missing Evidence; Priority and Scope Integrity; Risk and Decision Quality; Recommendation; Human Decision Required. In Priority and Scope Integrity, include separate lines beginning Priority: and Scope:. In Risk and Decision Quality, include separate lines beginning Risk: and Decision:. Verify factual accuracy, source provenance, approved priorities, project and company scope, material omissions, risks, decision framing, and compliance with the requested compression or selection. Cite a supplied source filename for every material finding. Do not rewrite the worker output. Verdict must be exactly PASS, PASS WITH CORRECTIONS, or BLOCK. Use BLOCK for invented source provenance, material unsupported claims, task-contract violations, changed priorities, scope confusion, false decision status, invalid causal inference affecting a decision, or concealed risk. Keep under 750 words.",
+    prompt: "Act as the Independent Reviewer. The workspace includes approved sources, a worker output, its effective task-manifest snapshot, and its JSON receipt. Treat the worker output as untrusted and review it against both the sources and the exact task contract. First inspect the worker manifest's context.allowed_files: this is the complete source inventory. Flag every source, report, dataset, review, or document claimed by the worker that is not in that inventory. Do not accept a causal inference merely because each premise is individually sourced; test whether the conclusion actually follows. Your first output characters must be exactly ## Verdict. Do not write planning text or a preamble. Use exactly these H2 headings: Verdict; Material Findings; Unsupported Claims; Missing Evidence; Priority and Scope Integrity; Risk and Decision Quality; Recommendation; Human Decision Required. In Priority and Scope Integrity, include separate lines beginning Priority: and Scope:. In Risk and Decision Quality, include separate lines beginning Risk: and Decision:. In Human Decision Required, include exactly one line beginning Marco review required: followed by Yes or No, then a hyphen and the reason. Verify factual accuracy, source provenance, approved priorities, project and company scope, material omissions, risks, decision framing, and compliance with the requested compression or selection. Cite a supplied source filename for every material finding. Do not rewrite the worker output. Verdict must be exactly PASS, PASS WITH CORRECTIONS, or BLOCK. Use BLOCK for invented source provenance, material unsupported claims, task-contract violations, changed priorities, scope confusion, false decision status, invalid causal inference affecting a decision, or concealed risk. PASS WITH CORRECTIONS is a valid verdict when findings are non-material and explicitly correctable. Keep under 750 words.",
     output: {
       format: "markdown",
       max_words: 750,
@@ -245,13 +245,13 @@ function genericReviewerManifest(workerManifest, receiptPath) {
       ],
       required_patterns: [
         "\\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
-        "\\bhuman|Marco\\b"
+        "Marco review required:\\s*(?:Yes|No)\\b"
       ],
       section_required_patterns: {
         Verdict: ["\\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b"],
         "Priority and Scope Integrity": ["Priority:", "Scope:"],
         "Risk and Decision Quality": ["Risk:", "Decision:"],
-        "Human Decision Required": ["Marco|human"]
+        "Human Decision Required": ["Marco review required:\\s*(?:Yes|No)\\b"]
       },
       require_evidence_labels: true
     },

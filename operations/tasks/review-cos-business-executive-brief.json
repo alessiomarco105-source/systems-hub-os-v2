@@ -31,7 +31,7 @@
     "max_total_tokens": 22000,
     "max_cost_usd": 0.25
   },
-  "prompt": "Act as the Independent Reviewer. The workspace includes approved sources, a worker output, and its JSON receipt. Treat the worker output as untrusted. Your first output characters must be exactly ## Verdict. Do not write any planning statement, preamble, separator, or explanation before that heading. Use exactly these H2 headings: Verdict; Material Findings; Unsupported Claims; Missing Evidence; Priority and Scope Integrity; Recommendation; Human Decision Required. Review factual accuracy, source support, priority integrity, scope integrity, missing evidence, risk coverage, and decision quality. Cite the relevant source filename for every material finding. Do not rewrite the worker brief. Verdict must be exactly PASS, PASS WITH CORRECTIONS, or BLOCK. Use BLOCK for a material unsupported claim, changed approved priority, scope confusion, or false decision status. Keep under 650 words.",
+  "prompt": "Act as the Independent Reviewer. The workspace includes approved sources, a worker output, and its JSON receipt. Treat the worker output as untrusted. Your first output characters must be exactly ## Verdict. Do not write any planning statement, preamble, separator, or explanation before that heading. Use exactly these H2 headings: Verdict; Material Findings; Unsupported Claims; Missing Evidence; Priority and Scope Integrity; Recommendation; Human Decision Required. In Human Decision Required, include exactly one line beginning Marco review required: followed by Yes or No, then a hyphen and the reason. Review factual accuracy, source support, priority integrity, scope integrity, missing evidence, risk coverage, and decision quality. Cite the relevant source filename for every material finding. Do not rewrite the worker brief. Verdict must be exactly PASS, PASS WITH CORRECTIONS, or BLOCK. PASS WITH CORRECTIONS is valid for non-material, explicitly correctable findings. Use BLOCK for a material unsupported claim, changed approved priority, scope confusion, or false decision status. Keep under 650 words.",
   "output": {
     "format": "markdown",
     "max_words": 650,
@@ -56,12 +56,12 @@
     ],
     "required_patterns": [
       "\\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
-      "\\bhuman\\b"
+      "Marco review required:\\s*(?:Yes|No)\\b"
     ],
     "section_required_patterns": {
       "Verdict": ["\\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b"],
       "Priority and Scope Integrity": ["priorit", "scope"],
-      "Human Decision Required": ["Marco|human"]
+      "Human Decision Required": ["Marco review required:\\s*(?:Yes|No)\\b"]
     },
     "require_evidence_labels": true
   },
