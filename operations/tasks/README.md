@@ -69,6 +69,7 @@ Available commands:
 | `hub run <task> --review` | Run the worker, then review the latest passing receipt |
 | `hub review latest [task]` | Review the latest passing standard-task receipt |
 | `hub costs --days N` | Aggregate provider-reported tokens and cost |
+| `hub tokens --days N --limit N` | Audit token use, failed-run waste, review share, and most expensive runs |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 
 Dynamic input:
@@ -80,3 +81,10 @@ Dynamic input:
 - produces an `ephemeral_manifest: true` receipt.
 
 The CLI removes runtime overlays after execution and ignores abandoned overlays in Git.
+
+Token discipline:
+
+- run `hub validate` before spending API tokens after editing manifests;
+- use `--review` only for decision-grade outputs;
+- prefer shorter `--input` text because dynamic input is appended to the prompt;
+- use `hub tokens --days 7` after calibration sessions to identify failed-run waste.

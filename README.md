@@ -54,6 +54,9 @@ hub run weekly-business-review
 hub run cos-business-executive-brief --input "Focus on launch decisions" --review
 hub review latest cos-business-executive-brief
 hub costs --days 30
+hub tokens --days 7 --limit 10
 ```
 
 Do not launch raw `pi` inside company or project repositories. `hub` preserves manifest, sandbox, validation, receipt, and review gates.
+
+Use raw `pi` only for manual, explicitly bounded exploration. Project-local `pi-context-tools` is installed for manual sessions so an agent can inspect context usage and compact long sessions, but `hub` intentionally disables Pi extensions during governed task runs.

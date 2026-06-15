@@ -1,0 +1,8 @@
+{
+  "packages": [
+    "npm:pi-context-tools"
+  ],
+  "compaction": {
+    "keepRecentTokens": 1200
+  }
+}

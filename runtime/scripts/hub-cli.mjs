@@ -32,6 +32,7 @@ Usage:
   hub list
   hub status
   hub costs [--days N]
+  hub tokens [--days N] [--limit N]
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -44,7 +45,7 @@ Rules:
   - no command publishes, sends, commits, deploys, or schedules work.`;
 }
 
-function parseFlags(args, allowed) {
+function parseFlags(args, allowed, booleanFlags = new Set(["review"])) {
   const options = {};
   const positional = [];
   for (let index = 0; index < args.length; index += 1) {
@@ -55,7 +56,7 @@ function parseFlags(args, allowed) {
     }
     const name = value.slice(2);
     if (!allowed.has(name)) fail(`unsupported option: --${name}`);
-    if (name === "review") {
+    if (booleanFlags.has(name)) {
       options.review = true;
       continue;
     }
@@ -215,8 +216,8 @@ function genericReviewerManifest(workerManifest, receiptPath) {
     },
     budget: {
       max_input_tokens: 22000,
-        max_output_tokens: 6000,
-        max_total_tokens: 33000,
+      max_output_tokens: 6000,
+      max_total_tokens: 33000,
       max_cost_usd: 0.25
     },
     prompt: "Act as the Independent Reviewer. The workspace includes approved sources, a worker output, its effective task-manifest snapshot, and its JSON receipt. Treat the worker output as untrusted and review it against both the sources and the exact task contract. First inspect the worker manifest's context.allowed_files: this is the complete source inventory. Flag every source, report, dataset, review, or document claimed by the worker that is not in that inventory. Do not accept a causal inference merely because each premise is individually sourced; test whether the conclusion actually follows. Your first output characters must be exactly ## Verdict. Do not write planning text or a preamble. Use exactly these H2 headings: Verdict; Material Findings; Unsupported Claims; Missing Evidence; Priority and Scope Integrity; Risk and Decision Quality; Recommendation; Human Decision Required. In Priority and Scope Integrity, include separate lines beginning Priority: and Scope:. In Risk and Decision Quality, include separate lines beginning Risk: and Decision:. In Human Decision Required, include exactly one line beginning Marco review required: followed by Yes or No, then a hyphen and the reason. Verify factual accuracy, source provenance, approved priorities, project and company scope, material omissions, risks, decision framing, and compliance with the requested compression or selection. Cite a supplied source filename for every material finding. Do not rewrite the worker output. Verdict must be exactly PASS, PASS WITH CORRECTIONS, or BLOCK. Use BLOCK for invented source provenance, material unsupported claims, task-contract violations, changed priorities, scope confusion, false decision status, invalid causal inference affecting a decision, or concealed risk. PASS WITH CORRECTIONS is a valid verdict when findings are non-material and explicitly correctable. Keep under 750 words.",
@@ -400,6 +401,132 @@ async function commandCosts(args) {
   }
 }
 
+function receiptTime(receipt) {
+  const time = Date.parse(receipt.finished_at);
+  return Number.isFinite(time) ? time : 0;
+}
+
+function receiptsSince(allReceipts, days) {
+  const cutoff = Date.now() - days * 86400000;
+  return allReceipts.filter(({ receipt }) => receiptTime(receipt) >= cutoff);
+}
+
+function usageNumbers(receipt) {
+  return {
+    input: Number(receipt.usage?.input || 0),
+    output: Number(receipt.usage?.output || 0),
+    cacheRead: Number(receipt.usage?.cache_read || 0),
+    cacheWrite: Number(receipt.usage?.cache_write || 0),
+    total: Number(receipt.usage?.total_tokens || 0),
+    cost: Number(receipt.usage?.cost_usd || 0)
+  };
+}
+
+function addUsage(target, usage) {
+  target.input += usage.input;
+  target.output += usage.output;
+  target.cacheRead += usage.cacheRead;
+  target.cacheWrite += usage.cacheWrite;
+  target.total += usage.total;
+  target.cost += usage.cost;
+}
+
+function blankUsage() {
+  return {
+    runs: 0,
+    pass: 0,
+    fail: 0,
+    input: 0,
+    output: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    total: 0,
+    cost: 0,
+    failedTokens: 0,
+    failedCost: 0
+  };
+}
+
+function pct(part, whole) {
+  if (!whole) return "0.0%";
+  return `${((part / whole) * 100).toFixed(1)}%`;
+}
+
+async function commandTokens(args) {
+  const { options, positional } = parseFlags(args, new Set(["days", "limit"]));
+  if (positional.length) fail("usage: hub tokens [--days N] [--limit N]");
+  const days = options.days === undefined ? 7 : Number(options.days);
+  const limit = options.limit === undefined ? 10 : Number(options.limit);
+  if (!Number.isInteger(days) || days < 1 || days > 3650) fail("--days must be an integer from 1 to 3650");
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) fail("--limit must be an integer from 1 to 100");
+
+  const selected = receiptsSince(await receipts(), days);
+  const total = blankUsage();
+  const worker = blankUsage();
+  const review = blankUsage();
+  const byTask = new Map();
+
+  for (const { receipt } of selected) {
+    const usage = usageNumbers(receipt);
+    const status = receipt.validation?.status === "pass" ? "pass" : "fail";
+    const kind = receipt.task_kind === "review" || receipt.task_id.startsWith("review-")
+      ? review
+      : worker;
+    const task = byTask.get(receipt.task_id) || blankUsage();
+    for (const bucket of [total, kind, task]) {
+      bucket.runs += 1;
+      bucket[status] += 1;
+      addUsage(bucket, usage);
+      if (status === "fail") {
+        bucket.failedTokens += usage.total;
+        bucket.failedCost += usage.cost;
+      }
+    }
+    byTask.set(receipt.task_id, task);
+  }
+
+  console.log(`Token audit for last ${days} days`);
+  console.log(`Runs: ${total.runs} pass=${total.pass} fail=${total.fail}`);
+  console.log(`Tokens: ${total.total.toLocaleString("en-US")}  Cost: $${total.cost.toFixed(6)}`);
+  console.log(`Failed-run tokens: ${total.failedTokens.toLocaleString("en-US")} (${pct(total.failedTokens, total.total)})  Failed-run cost: $${total.failedCost.toFixed(6)}`);
+  console.log(`Worker tokens: ${worker.total.toLocaleString("en-US")} (${pct(worker.total, total.total)})  Review tokens: ${review.total.toLocaleString("en-US")} (${pct(review.total, total.total)})`);
+  console.log(`Cache read tokens: ${total.cacheRead.toLocaleString("en-US")} (${pct(total.cacheRead, total.total)})`);
+
+  if (byTask.size) {
+    console.log("\nBY TASK");
+    console.log("TASK                                   RUNS  FAIL  TOKENS    AVG/RUN  COST");
+    for (const [task, value] of [...byTask].sort((a, b) => b[1].total - a[1].total)) {
+      const avg = value.runs ? Math.round(value.total / value.runs) : 0;
+      console.log(
+        `${task.padEnd(38)} ${String(value.runs).padStart(4)}  ` +
+        `${String(value.fail).padStart(4)}  ${String(value.total).padStart(8)}  ` +
+        `${String(avg).padStart(7)}  $${value.cost.toFixed(6)}`
+      );
+    }
+  }
+
+  const expensive = selected
+    .map(item => ({ ...item, usage: usageNumbers(item.receipt) }))
+    .sort((a, b) => b.usage.total - a.usage.total)
+    .slice(0, limit);
+  if (expensive.length) {
+    console.log(`\nTOP ${limit} TOKEN RUNS`);
+    for (const { path, receipt, usage } of expensive) {
+      console.log(
+        `${receipt.finished_at} ${receipt.validation?.status || "unknown"} ` +
+        `${receipt.task_id} tokens=${usage.total} cost=$${usage.cost.toFixed(6)} ` +
+        `${relative(repoRoot, path)}`
+      );
+    }
+  }
+
+  console.log("\nEFFICIENCY NOTES");
+  if (total.fail) console.log("- Failed runs are consuming tokens; prefer `hub validate` and narrower prompts before `--review`.");
+  if (review.total > worker.total) console.log("- Review runs exceed worker usage; reserve `--review` for decision-grade outputs.");
+  if (total.cacheRead < total.total * 0.25) console.log("- Cache-read share is low; repeated tasks may benefit from smaller, stable context manifests.");
+  console.log("- `pi-context-tools` is for manual interactive Pi sessions; `hub` keeps extensions disabled for deterministic runs.");
+}
+
 function commandExists(command, args = []) {
   try {
     execFileSync(command, args, { stdio: "ignore" });
@@ -444,6 +571,16 @@ async function commandStatus() {
   console.log(`Tasks: ${tasks.length} total, ${tasks.filter(t => t.manifest.execution_status === "manual").length} manual`);
   console.log(`Receipts: ${allReceipts.length}`);
   console.log(`Last run: ${last ? `${last.finished_at} ${last.task_id} ${last.validation.status}` : "none"}`);
+  let contextTools = "not installed";
+  try {
+    const settings = await readJson(resolve(repoRoot, ".pi/settings.json"));
+    contextTools = settings.packages?.includes("npm:pi-context-tools")
+      ? "installed locally (manual Pi only)"
+      : "not installed";
+  } catch {
+    // Project-local Pi settings are optional.
+  }
+  console.log(`Pi context tools: ${contextTools}`);
   console.log("Schedulers: not connected");
   console.log("Telegram: not connected to v2 CLI");
   console.log("Write mode: disabled");
@@ -474,6 +611,9 @@ async function main() {
       break;
     case "costs":
       await commandCosts(args);
+      break;
+    case "tokens":
+      await commandTokens(args);
       break;
     case "run":
       await commandRun(args);

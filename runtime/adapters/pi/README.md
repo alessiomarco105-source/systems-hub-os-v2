@@ -59,6 +59,20 @@ On 2026-06-15, DeepSeek V4 Flash completed a read-only COS-Business brief using 
 
 `context-mode` has not been installed. It may later optimize long-session context after source review, but provider usage events remain the accounting source of truth.
 
+`pi-context-tools` is installed project-locally for manual Pi sessions only:
+
+```bash
+pi list --approve
+pi --approve
+```
+
+The package exposes:
+
+- `context_info` — report current interactive-session context usage;
+- `compact_context` — compact the current interactive session after the turn.
+
+The package is not loaded by `hub` because the restricted launcher passes `--no-extensions`. This preserves deterministic task manifests, receipts, and sandbox behavior for official Systems Hub runs.
+
 ## Independent Review Gate
 
 The independent reviewer:
@@ -86,5 +100,6 @@ Use `hub`, not raw `pi`, for company work. The CLI:
 - builds an independent Pro review with worker sources, role, effective manifest, output, and receipt;
 - records immutable manifest and prompt hashes;
 - reports status and aggregate provider costs.
+- reports token-efficiency audit data through `hub tokens --days N --limit N`.
 
 The command is linked at `~/.local/bin/hub` and works from any directory. It does not enable writing, scheduling, Telegram, cloud execution, or external actions.

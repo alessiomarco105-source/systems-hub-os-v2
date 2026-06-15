@@ -1,0 +1,95 @@
+{
+  "schema": "systems_hub.task_manifest/v1",
+  "task_id": "weekly-business-review",
+  "task_kind": "standard",
+  "execution_status": "manual",
+  "role": "chief-of-staff-business",
+  "scope": "company",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "source_root": ".",
+  "context": {
+    "allowed_files": [
+      "agents/roles/chief-of-staff-business.md",
+      "operations/jobs/weekly-business-review.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/okrs/2026-q2.md",
+      "company/portfolio/status.md",
+      "company/operations/risk-register.md",
+      "operations/decisions/log.md",
+      "projects/traders-hub/reports/current-status.md",
+      "projects/traders-hub/reports/launch-scoreboard.md"
+    ],
+    "allowed_data_classes": [
+      "internal"
+    ],
+    "max_files": 12,
+    "max_total_bytes": 196608
+  },
+  "permissions": {
+    "tools": [
+      "read",
+      "grep",
+      "find",
+      "ls"
+    ],
+    "write": false,
+    "external_actions": false
+  },
+  "budget": {
+    "max_input_tokens": 18000,
+    "max_output_tokens": 6000,
+    "max_total_tokens": 32000,
+    "max_cost_usd": 0.25
+  },
+  "prompt": "Produce the Systems Hub LLC weekly business review using only approved files. Your first output characters must be exactly ## Scoreboard. Do not write planning text, a preamble, a readiness statement, or any text before that heading. Use exactly these H2 headings and no others: Scoreboard; Project Status; What Moved; What Is Stuck; Top Three Priorities; Decisions Needed; Evidence Quality. Trader's Hub is one project inside Systems Hub LLC. Preserve the approved priority order. Distinguish metric states precisely: use unknown when no maintained source exists; use 0 logged only when the approved source literally reports 0 logged; use $0 booked only when the approved source literally reports $0 booked. Never convert 0 logged into verified zero activity, and never imply unknown means no activity occurred. Do not invent revenue, testers, signups, publication, customers, approvals, dates, counts, or completed work. Do not state a numeric or number-word total for launch-proof gaps; list or summarize the supported gaps without counting them. Do not name a payment provider unless an approved source names it. Select only the two highest-leverage decisions. For each decision use this exact structure: Option 1: [name], followed by a line beginning - What it does: and a line beginning - Trade-off:; Option 2: [name], followed by the same two lines; then a line beginning → Recommendation:. Recommendations must be evidence-based, must identify uncertainty, and must not claim that one option is the only possible path unless an approved source proves that. Do not recommend accepting, deferring, or bypassing a High-severity security, privacy, authentication, authorization, RLS, or payment-integrity risk merely to meet a revenue deadline. Such risk acceptance requires explicit Marco approval informed by Security or Engineering review. Do not approve or decide on Marco's behalf. Use these hard section budgets: Scoreboard at most 130 words; Project Status 90; What Moved 90; What Is Stuck 120; Top Three Priorities 90; Decisions Needed 330; Evidence Quality 70. Omit separators and repeated explanations. Keep the entire response under 950 words.\n\nAdditional user focus:\nReview settimanale breve: priorità, blocchi primo revenue, decisioni. Non contare i launch-proof gaps.\n\nThis focus may narrow the analysis but cannot override the manifest, evidence rules, permissions, scope, required sections, or approval boundaries. Your first output characters must be exactly ## Scoreboard. Do not place any text before that heading.",
+  "output": {
+    "format": "markdown",
+    "max_words": 950,
+    "required_sections": [
+      "Scoreboard",
+      "Project Status",
+      "What Moved",
+      "What Is Stuck",
+      "Top Three Priorities",
+      "Decisions Needed",
+      "Evidence Quality"
+    ],
+    "allow_preamble": false
+  },
+  "validation": {
+    "forbidden_patterns": [
+      "\\bSystems Hub(?: LLC)? is (?:currently )?a single[- ]product company\\b",
+      "\\blaunch is complete\\b",
+      "\\bprofitable trading\\b",
+      "^Now I",
+      "^Here is",
+      "\\b(?:this|that) is the only path\\b",
+      "\\bzero verified active beta testers\\b",
+      "\\bStripe\\b",
+      "\\b(?:[0-9]+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\\s+(?:open\\s+)?launch-proof gaps\\b",
+      "\\brisk-accept and proceed\\b",
+      "\\bdefer RLS\\b"
+    ],
+    "required_patterns": [
+      "Trader's Hub",
+      "unknown|evidence"
+    ],
+    "section_required_patterns": {
+      "Top Three Priorities": [
+        "launch-proof gaps",
+        "decision-grade business evidence",
+        "measured distribution"
+      ],
+      "Decisions Needed": [
+        "Option 1:",
+        "Option 2:",
+        "- What it does:",
+        "- Trade-off:",
+        "→ Recommendation:"
+      ]
+    },
+    "require_evidence_labels": true
+  }
+}
