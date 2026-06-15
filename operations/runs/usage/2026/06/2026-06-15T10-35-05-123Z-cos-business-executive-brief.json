@@ -1,0 +1,64 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T10-35-05-123Z-cos-business-executive-brief",
+  "task_id": "cos-business-executive-brief",
+  "started_at": "2026-06-15T10:34:36.547Z",
+  "finished_at": "2026-06-15T10:35:05.123Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "context": {
+    "files": [
+      "agents/roles/chief-of-staff-business.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "file_count": 5,
+    "total_bytes": 6483
+  },
+  "usage": {
+    "input": 140,
+    "output": 876,
+    "cache_read": 3584,
+    "cache_write": 0,
+    "total_tokens": 4600,
+    "cost_usd": 0.0002749152
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T10-35-05-123Z-cos-business-executive-brief.md",
+    "sha256": "237c53942e1cbb34a142bf0397bd07e0738929b30b94504235124c4093788efb",
+    "word_count": 370
+  },
+  "validation": {
+    "status": "pass",
+    "checks": [
+      "output words: 370/550",
+      "required section: Company Status",
+      "required section: What Moved",
+      "required section: Blocked or Unknown",
+      "required section: Top Three Priorities",
+      "required section: Decisions Required",
+      "required section: Evidence Quality",
+      "section pattern present (Top Three Priorities): launch-proof gaps",
+      "section pattern present (Top Three Priorities): decision-grade business evidence",
+      "section pattern present (Top Three Priorities): measured distribution",
+      "forbidden pattern absent: \\bSystems Hub(?: LLC)? is (?:currently )?a single[- ]product company\\b",
+      "forbidden pattern absent: \\bonly product company\\b",
+      "forbidden pattern absent: \\blaunch is complete\\b",
+      "forbidden pattern absent: \\bprofitable trading\\b",
+      "required pattern present: one active product project",
+      "required pattern present: Trader's Hub",
+      "evidence language present",
+      "input tokens: 140/12000",
+      "output tokens: 876/1000",
+      "total tokens: 4600/18000",
+      "cost USD: 0.0002749152/0.1"
+    ],
+    "failures": []
+  },
+  "promotion": {
+    "eligible": true,
+    "human_review_required": true
+  }
+}

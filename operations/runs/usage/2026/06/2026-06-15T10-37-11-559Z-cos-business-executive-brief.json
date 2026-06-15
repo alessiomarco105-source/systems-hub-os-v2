@@ -1,0 +1,70 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T10-37-11-559Z-cos-business-executive-brief",
+  "task_id": "cos-business-executive-brief",
+  "started_at": "2026-06-15T10:36:45.872Z",
+  "finished_at": "2026-06-15T10:37:11.559Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "context": {
+    "files": [
+      "agents/roles/chief-of-staff-business.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "file_count": 5,
+    "total_bytes": 6483
+  },
+  "usage": {
+    "input": 1627,
+    "output": 1237,
+    "cache_read": 1792,
+    "cache_write": 0,
+    "total_tokens": 4656,
+    "cost_usd": 0.0005791576000000002
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T10-37-11-559Z-cos-business-executive-brief.md",
+    "sha256": "fe08c6511fd35086dfbb70746d32f544d9503873784dbf3279cad24186f912d0",
+    "word_count": 299
+  },
+  "validation": {
+    "status": "fail",
+    "checks": [
+      "output words: 299/550",
+      "output starts with: ## Company Status",
+      "required section: Company Status",
+      "required section: What Moved",
+      "required section: Blocked or Unknown",
+      "required section: Top Three Priorities",
+      "required section: Decisions Required",
+      "required section: Evidence Quality",
+      "section pattern present (Top Three Priorities): launch-proof gaps",
+      "section pattern present (Top Three Priorities): decision-grade business evidence",
+      "section pattern present (Top Three Priorities): measured distribution",
+      "forbidden pattern absent: \\bSystems Hub(?: LLC)? is (?:currently )?a single[- ]product company\\b",
+      "forbidden pattern absent: \\bonly product company\\b",
+      "forbidden pattern absent: ^Here is",
+      "forbidden pattern absent: Trading Edge Refinement.{0,100}\\bplanning",
+      "forbidden pattern absent: \\blaunch is complete\\b",
+      "forbidden pattern absent: \\bprofitable trading\\b",
+      "required pattern present: (?:one|only) active product project",
+      "required pattern present: Trader's Hub",
+      "evidence language present",
+      "input tokens: 1627/12000",
+      "output tokens: 1237/1000",
+      "total tokens: 4656/18000",
+      "cost USD: 0.0005791576000000002/0.1"
+    ],
+    "failures": [
+      "required pattern missing: (?:one|only) active product project",
+      "output token budget exceeded"
+    ]
+  },
+  "promotion": {
+    "eligible": false,
+    "human_review_required": true
+  }
+}

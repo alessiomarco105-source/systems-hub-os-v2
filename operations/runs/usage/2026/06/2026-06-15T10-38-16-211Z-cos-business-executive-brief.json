@@ -1,0 +1,67 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T10-38-16-211Z-cos-business-executive-brief",
+  "task_id": "cos-business-executive-brief",
+  "started_at": "2026-06-15T10:37:34.621Z",
+  "finished_at": "2026-06-15T10:38:16.211Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "context": {
+    "files": [
+      "agents/roles/chief-of-staff-business.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "file_count": 5,
+    "total_bytes": 6483
+  },
+  "usage": {
+    "input": 129,
+    "output": 1676,
+    "cache_read": 4352,
+    "cache_write": 0,
+    "total_tokens": 6157,
+    "cost_usd": 0.0004995256000000001
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T10-38-16-211Z-cos-business-executive-brief.md",
+    "sha256": "07aa7f6dfd713b7436e5fc0d958ec8f4ef2c40767d9d05c05a76cdceeef649a6",
+    "word_count": 320
+  },
+  "validation": {
+    "status": "pass",
+    "checks": [
+      "output words: 320/550",
+      "output starts with: ## Company Status",
+      "required section: Company Status",
+      "required section: What Moved",
+      "required section: Blocked or Unknown",
+      "required section: Top Three Priorities",
+      "required section: Decisions Required",
+      "required section: Evidence Quality",
+      "section pattern present (Top Three Priorities): launch-proof gaps",
+      "section pattern present (Top Three Priorities): decision-grade business evidence",
+      "section pattern present (Top Three Priorities): measured distribution",
+      "forbidden pattern absent: \\bSystems Hub(?: LLC)? is (?:currently )?a single[- ]product company\\b",
+      "forbidden pattern absent: \\bonly product company\\b",
+      "forbidden pattern absent: ^Here is",
+      "forbidden pattern absent: Trading Edge Refinement.{0,100}\\bplanning",
+      "forbidden pattern absent: \\blaunch is complete\\b",
+      "forbidden pattern absent: \\bprofitable trading\\b",
+      "required pattern present: (?:one|only) active (?:company )?product project",
+      "required pattern present: Trader's Hub",
+      "evidence language present",
+      "input tokens: 129/12000",
+      "output tokens: 1676/2000",
+      "total tokens: 6157/18000",
+      "cost USD: 0.0004995256000000001/0.1"
+    ],
+    "failures": []
+  },
+  "promotion": {
+    "eligible": true,
+    "human_review_required": true
+  }
+}

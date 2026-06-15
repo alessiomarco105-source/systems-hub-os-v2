@@ -1,0 +1,65 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T10-33-32-145Z-cos-business-executive-brief",
+  "task_id": "cos-business-executive-brief",
+  "started_at": "2026-06-15T10:32:56.212Z",
+  "finished_at": "2026-06-15T10:33:32.145Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "context": {
+    "files": [
+      "agents/roles/chief-of-staff-business.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "file_count": 5,
+    "total_bytes": 6483
+  },
+  "usage": {
+    "input": 578,
+    "output": 1867,
+    "cache_read": 3200,
+    "cache_write": 0,
+    "total_tokens": 5645,
+    "cost_usd": 0.0006126400000000001
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T10-33-32-145Z-cos-business-executive-brief.md",
+    "sha256": "5387bb85e4d79571338ca1547dbe8e5a8796a8b3e14eb8618a15362ccc34e83a",
+    "word_count": 1253
+  },
+  "validation": {
+    "status": "fail",
+    "checks": [
+      "output words: 1253/550",
+      "required section: Company Status",
+      "required section: What Moved",
+      "required section: Blocked or Unknown",
+      "required section: Top Three Priorities",
+      "required section: Decisions Required",
+      "required section: Evidence Quality",
+      "forbidden pattern absent: \\bsingle[- ]product company\\b",
+      "forbidden pattern absent: \\bonly product company\\b",
+      "forbidden pattern absent: \\blaunch is complete\\b",
+      "forbidden pattern absent: \\bprofitable trading\\b",
+      "required pattern present: one active product project",
+      "required pattern present: Trader's Hub",
+      "evidence language present",
+      "input tokens: 578/12000",
+      "output tokens: 1867/1600",
+      "total tokens: 5645/18000",
+      "cost USD: 0.0006126400000000001/0.1"
+    ],
+    "failures": [
+      "output exceeds max_words",
+      "forbidden pattern matched: \\bsingle[- ]product company\\b",
+      "output token budget exceeded"
+    ]
+  },
+  "promotion": {
+    "eligible": false,
+    "human_review_required": true
+  }
+}
