@@ -70,6 +70,7 @@ Available commands:
 | `hub review latest [task]` | Review the latest passing standard-task receipt |
 | `hub costs --days N` | Aggregate provider-reported tokens and cost |
 | `hub tokens --days N --limit N` | Audit token use, failed-run waste, review share, and most expensive runs |
+| `hub tui` | Open the interactive terminal interface |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 
 Dynamic input:
@@ -81,6 +82,8 @@ Dynamic input:
 - produces an `ephemeral_manifest: true` receipt.
 
 The CLI removes runtime overlays after execution and ignores abandoned overlays in Git.
+
+The TUI is a convenience layer over the same commands. It does not add write, publish, schedule, deploy, or external-action powers.
 
 Token discipline:
 

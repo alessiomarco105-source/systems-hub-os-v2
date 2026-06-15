@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { execFileSync, spawn } from "node:child_process";
+import { createInterface } from "node:readline/promises";
 import {
   readFile,
   readdir,
@@ -33,6 +34,7 @@ Usage:
   hub status
   hub costs [--days N]
   hub tokens [--days N] [--limit N]
+  hub tui
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -586,6 +588,231 @@ async function commandStatus() {
   console.log("Write mode: disabled");
 }
 
+const ansi = {
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  cyan: "\x1b[36m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m"
+};
+
+function color(text, code) {
+  return `${code}${text}${ansi.reset}`;
+}
+
+function clearScreen() {
+  process.stdout.write("\x1b[2J\x1b[H");
+}
+
+function divider(width = 72) {
+  return color("─".repeat(width), ansi.dim);
+}
+
+function statusColor(status) {
+  if (status === "pass") return ansi.green;
+  if (status === "fail") return ansi.red;
+  return ansi.yellow;
+}
+
+function formatMoney(value) {
+  return `$${Number(value || 0).toFixed(6)}`;
+}
+
+function formatDate(value) {
+  if (!value) return "unknown";
+  return String(value).replace("T", " ").replace(/\.\d+Z$/, "Z");
+}
+
+async function tuiPrompt(rl, label) {
+  return (await rl.question(color(label, ansi.cyan))).trim();
+}
+
+async function tuiPause(rl) {
+  await rl.question(color("\nPress Enter to continue...", ansi.dim));
+}
+
+async function tokenSummary(days = 7) {
+  const selected = receiptsSince(await receipts(), days);
+  const total = blankUsage();
+  for (const { receipt } of selected) {
+    const usage = usageNumbers(receipt);
+    const status = receipt.validation?.status === "pass" ? "pass" : "fail";
+    total.runs += 1;
+    total[status] += 1;
+    addUsage(total, usage);
+    if (status === "fail") {
+      total.failedTokens += usage.total;
+      total.failedCost += usage.cost;
+    }
+  }
+  return total;
+}
+
+async function tuiDashboard() {
+  const tasks = await taskManifests();
+  const allReceipts = await receipts();
+  const last = allReceipts[0]?.receipt;
+  const total = await tokenSummary(7);
+  let branch = "unknown";
+  let commit = "unknown";
+  let dirty = "unknown";
+  try {
+    branch = execFileSync("git", ["branch", "--show-current"], { cwd: repoRoot, encoding: "utf8" }).trim();
+    commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
+    dirty = execFileSync("git", ["status", "--short"], { cwd: repoRoot, encoding: "utf8" }).trim() ? "yes" : "no";
+  } catch {
+    // Dashboard only.
+  }
+
+  console.log(color("Systems Hub", ansi.bold) + color(" terminal app", ansi.dim));
+  console.log(divider());
+  console.log(`${color("Repo", ansi.dim)}       ${repoRoot}`);
+  console.log(`${color("Git", ansi.dim)}        ${branch}@${commit} dirty=${dirty}`);
+  console.log(`${color("Tasks", ansi.dim)}      ${tasks.length} total, ${tasks.filter(task => task.manifest.execution_status === "manual").length} manual`);
+  console.log(`${color("Receipts", ansi.dim)}   ${allReceipts.length}`);
+  console.log(`${color("Last run", ansi.dim)}   ${last ? `${formatDate(last.finished_at)} ${last.task_id} ${color(last.validation?.status || "unknown", statusColor(last.validation?.status))}` : "none"}`);
+  console.log(`${color("7d tokens", ansi.dim)}  ${total.total.toLocaleString("en-US")} cost=${formatMoney(total.cost)} failed=${pct(total.failedTokens, total.total)}`);
+}
+
+async function tuiShowTasks(rl) {
+  const tasks = await taskManifests();
+  console.log(color("Tasks", ansi.bold));
+  console.log(divider());
+  for (const [index, { manifest }] of tasks.entries()) {
+    const state = manifest.execution_status === "manual"
+      ? color(manifest.execution_status, ansi.green)
+      : color(manifest.execution_status, ansi.yellow);
+    console.log(`${String(index + 1).padStart(2)}. ${manifest.task_id.padEnd(36)} ${manifest.task_kind.padEnd(8)} ${state} ${manifest.model}`);
+  }
+  await tuiPause(rl);
+}
+
+async function tuiSelectTask(rl, { standardOnly = false } = {}) {
+  const tasks = (await taskManifests()).filter(task => !standardOnly || task.manifest.task_kind === "standard");
+  for (const [index, { manifest }] of tasks.entries()) {
+    const marker = manifest.execution_status === "manual" ? " " : "*";
+    console.log(`${String(index + 1).padStart(2)}. ${marker} ${manifest.task_id} (${manifest.model}, ${manifest.execution_status})`);
+  }
+  const answer = await tuiPrompt(rl, "\nTask number or id: ");
+  const numeric = Number(answer);
+  const selected = Number.isInteger(numeric) && numeric >= 1 && numeric <= tasks.length
+    ? tasks[numeric - 1]
+    : tasks.find(task => task.manifest.task_id === answer);
+  if (!selected) console.log(color("Task not found.", ansi.red));
+  return selected;
+}
+
+async function tuiRunTask(rl) {
+  console.log(color("Run Task", ansi.bold));
+  console.log(divider());
+  const task = await tuiSelectTask(rl, { standardOnly: true });
+  if (!task) return;
+  if (task.manifest.execution_status !== "manual") {
+    console.log(color(`Task is not executable: ${task.manifest.execution_status}`, ansi.red));
+    return;
+  }
+  const input = await tuiPrompt(rl, "Optional focus (Enter to skip): ");
+  const withReview = /^y(es)?$/i.test(await tuiPrompt(rl, "Run independent review after pass? [y/N]: "));
+  const args = [task.manifest.task_id];
+  if (input) args.push("--input", input);
+  if (withReview) args.push("--review");
+  console.log(divider());
+  await commandRun(args);
+}
+
+async function tuiReviewLatest(rl) {
+  console.log(color("Review Latest", ansi.bold));
+  console.log(divider());
+  const task = await tuiSelectTask(rl, { standardOnly: true });
+  if (!task) return;
+  console.log(divider());
+  await reviewTask(task);
+}
+
+async function tuiTokenAudit(rl) {
+  const days = await tuiPrompt(rl, "Days [7]: ");
+  const limit = await tuiPrompt(rl, "Top runs [10]: ");
+  const args = [];
+  if (days) args.push("--days", days);
+  if (limit) args.push("--limit", limit);
+  console.log(divider());
+  await commandTokens(args);
+}
+
+async function tuiRecentReceipts(rl) {
+  const allReceipts = (await receipts()).slice(0, 12);
+  console.log(color("Recent Receipts", ansi.bold));
+  console.log(divider());
+  for (const { path, receipt } of allReceipts) {
+    const usage = usageNumbers(receipt);
+    const status = receipt.validation?.status || "unknown";
+    console.log(
+      `${color(status.padEnd(4), statusColor(status))} ` +
+      `${formatDate(receipt.finished_at)} ` +
+      `${receipt.task_id.padEnd(36)} ` +
+      `${String(usage.total).padStart(6)} tok ${formatMoney(usage.cost)}`
+    );
+    console.log(color(`     ${relative(repoRoot, path)}`, ansi.dim));
+  }
+  await tuiPause(rl);
+}
+
+async function commandTui(args) {
+  if (args.length) fail("usage: hub tui");
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    fail("hub tui requires an interactive terminal");
+  }
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    while (true) {
+      clearScreen();
+      await tuiDashboard();
+      console.log(divider());
+      console.log("1. Run task");
+      console.log("2. Review latest output");
+      console.log("3. Token audit");
+      console.log("4. Recent receipts");
+      console.log("5. Validate manifests");
+      console.log("6. List tasks");
+      console.log("q. Quit");
+      const choice = await tuiPrompt(rl, "\nSelect: ");
+      clearScreen();
+      if (/^q(uit)?$/i.test(choice)) break;
+
+      try {
+        if (choice === "1") {
+          await tuiRunTask(rl);
+          await tuiPause(rl);
+        } else if (choice === "2") {
+          await tuiReviewLatest(rl);
+          await tuiPause(rl);
+        } else if (choice === "3") {
+          await tuiTokenAudit(rl);
+          await tuiPause(rl);
+        } else if (choice === "4") {
+          await tuiRecentReceipts(rl);
+        } else if (choice === "5") {
+          await commandValidate([]);
+          await tuiPause(rl);
+        } else if (choice === "6") {
+          await tuiShowTasks(rl);
+        } else {
+          console.log(color("Unknown choice.", ansi.red));
+          await tuiPause(rl);
+        }
+      } catch (error) {
+        console.log(color(`Error: ${error.message}`, ansi.red));
+        await tuiPause(rl);
+      }
+    }
+  } finally {
+    rl.close();
+  }
+}
+
 async function cleanupStaleOverlays() {
   const entries = await readdir(taskDir, { withFileTypes: true });
   const now = Date.now();
@@ -614,6 +841,9 @@ async function main() {
       break;
     case "tokens":
       await commandTokens(args);
+      break;
+    case "tui":
+      await commandTui(args);
       break;
     case "run":
       await commandRun(args);
