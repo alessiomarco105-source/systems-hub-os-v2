@@ -1,0 +1,35 @@
+schema: systems_hub.integration_registry/v2
+project: traders-hub
+updated: 2026-06-15
+integrations:
+  - id: github
+    purpose: product source of truth
+    status: active
+    data_class: internal
+    write_requires_approval: true
+  - id: vercel
+    purpose: web hosting and serverless functions
+    status: active
+    data_class: protected
+    write_requires_approval: true
+  - id: supabase
+    purpose: authentication and user-data persistence
+    status: active
+    data_class: protected
+    write_requires_approval: true
+  - id: telegram-signup
+    purpose: notify Marco about beta signups
+    status: active-reported
+    data_class: private
+    write_requires_approval: false
+    allowed_action: narrow pre-approved notification only
+  - id: resend
+    purpose: applicant and internal beta emails
+    status: implementation-present-configuration-unverified
+    data_class: private
+    write_requires_approval: true
+  - id: lemon-squeezy
+    purpose: checkout, subscription events, and entitlement
+    status: implementation-present-production-verification-incomplete
+    data_class: protected
+    write_requires_approval: true

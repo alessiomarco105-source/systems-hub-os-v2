@@ -1,0 +1,54 @@
+schema: systems_hub.context_map/v2
+project_id: traders-hub
+updated: 2026-06-15
+default:
+  include:
+    - manifest.yaml
+    - reports/current-status.md
+  exclude:
+    - raw customer data
+    - credentials and environment files
+    - personal trading records
+    - unrelated company projects
+packs:
+  engineering:
+    include:
+      - knowledge/architecture-summary.md
+      - workflows/code-delivery.md
+      - security/risk-register.md
+    repository_access: task_scoped
+  launch_readiness:
+    include:
+      - reports/launch-scoreboard.md
+      - reports/beta-signal-summary.md
+      - workflows/beta-readiness.md
+      - workflows/launch-operations.md
+      - integrations/registry.yaml
+      - security/legal-status.md
+  marketing:
+    include:
+      - knowledge/product-overview.md
+      - knowledge/brand.md
+      - reports/launch-scoreboard.md
+    prohibited:
+      - trading profitability claims
+      - invented customer proof
+      - unverified launch metrics
+  design:
+    include:
+      - knowledge/product-overview.md
+      - design/standards.md
+      - design/audit-index.md
+  customer_experience:
+    include:
+      - reports/beta-signal-summary.md
+      - workflows/beta-readiness.md
+    private_data: explicit_approval
+  security:
+    include:
+      - knowledge/architecture-summary.md
+      - integrations/registry.yaml
+      - security/risk-register.md
+      - security/legal-status.md
+      - workflows/code-delivery.md
+    repository_access: approved_local_targets_only

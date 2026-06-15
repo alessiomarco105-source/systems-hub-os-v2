@@ -1,0 +1,64 @@
+schema: systems_hub.project_manifest/v2
+project_id: traders-hub
+name: Trader's Hub / The Trader System
+company: Systems Hub LLC
+stage: beta-launch
+status: active
+updated: 2026-06-15
+executive_owner: marco
+operating_owner: traders-hub-engineer
+objectives:
+  - launch a trustworthy beta
+  - collect first platform revenue
+  - validate activation, retention, and distribution
+success_metrics:
+  - active_beta_testers
+  - trial_signups
+  - paid_users
+  - platform_revenue
+  - activation_completion
+  - retained_weekly_users
+repository:
+  path: /Users/ciccio/Desktop/Codex/TradersHub-Codex
+  remote: https://github.com/alessiomarco105-source/TradersHub.git
+  source_of_truth: true
+canonical_context:
+  product: knowledge/product-overview.md
+  architecture: knowledge/architecture-summary.md
+  brand: knowledge/brand.md
+  roadmap: knowledge/roadmap.md
+  current_status: reports/current-status.md
+  launch_scoreboard: reports/launch-scoreboard.md
+  beta_evidence: reports/beta-signal-summary.md
+  integrations: integrations/registry.yaml
+  security: security/risk-register.md
+  legal: security/legal-status.md
+context_loader: context-map.yaml
+allowed_capabilities:
+  - engineering
+  - security
+  - design
+  - marketing
+  - content
+  - sales
+  - customer-experience
+  - research
+protected_areas:
+  - auth
+  - rls
+  - payments
+  - legal
+  - privacy
+  - production
+default_data_class: internal
+provider_rules:
+  public_internal_context: task_scoped
+  private_customer_finance: explicit_approval
+  secrets: denied
+evidence_rules:
+  unknown_is_not_zero: true
+  stale_launch_claims_are_noncanonical: true
+  repository_snapshot_is_not_release_authorization: true
+promotion:
+  approver: marco
+  syntax: "approved: [specific action]"

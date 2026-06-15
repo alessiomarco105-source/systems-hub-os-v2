@@ -1,0 +1,30 @@
+schema: systems_hub.capability_registry/v2
+updated: 2026-06-15
+capabilities:
+  - id: engineering
+    path: engineering/
+    lead: cto
+  - id: security
+    path: security/
+    lead: security-officer
+  - id: design
+    path: design/
+    lead: designer
+  - id: marketing
+    path: marketing/
+    lead: cmo
+  - id: content
+    path: content/
+    lead: content-producer
+  - id: sales
+    path: sales/
+    lead: sales-specialist
+  - id: customer-experience
+    path: customer-experience/
+    lead: customer-experience
+  - id: research
+    path: research/
+    lead: scout
+  - id: finance
+    path: finance/
+    lead: chief-of-staff-business

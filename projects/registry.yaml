@@ -1,0 +1,11 @@
+schema: systems_hub.project_registry/v2
+updated: 2026-06-15
+projects:
+  - id: traders-hub
+    name: Trader's Hub / The Trader System
+    path: traders-hub/
+    type: company-product
+    stage: beta-launch
+    status: active
+    executive_owner: marco
+    operating_owner: traders-hub-engineer

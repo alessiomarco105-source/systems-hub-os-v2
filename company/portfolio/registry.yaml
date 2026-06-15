@@ -1,0 +1,39 @@
+schema: systems_hub.portfolio_registry/v2
+updated: 2026-06-15
+owner: chief-of-staff-business
+projects:
+  - id: traders-hub
+    type: company-product
+    stage: beta-launch
+    status: active
+    priority: 1
+    package: ../../projects/traders-hub/
+    objective: first verified product revenue and launch integrity
+  - id: trading-edge-refinement
+    type: personal-operating-lane
+    stage: operate
+    status: active
+    priority: 2
+    package: null
+    objective: improve Marco's trading process and produce content source material
+  - id: social-media-management
+    type: company-capability-build
+    stage: validation
+    status: planning
+    priority: 3
+    package: null
+    objective: build repeatable measurable distribution
+  - id: trading-assistant
+    type: potential-product
+    stage: idea
+    status: planning
+    priority: 4
+    package: null
+    objective: validate demand before build
+  - id: future-vertical-products
+    type: idea-pipeline
+    stage: idea
+    status: paused
+    priority: 5
+    package: null
+    objective: preserve ideas without distracting from launch

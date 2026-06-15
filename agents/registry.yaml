@@ -1,0 +1,79 @@
+schema: systems_hub.agent_registry/v2
+updated: 2026-06-15
+defaults:
+  authority: draft
+  core_access: read_only
+  external_actions: approval_required
+  secrets: denied
+agents:
+  - id: harness-orchestrator
+    role: roles/harness-orchestrator.md
+    reports_to: marco
+    scope: company
+    status: active
+  - id: chief-of-staff-business
+    role: roles/chief-of-staff-business.md
+    reports_to: marco
+    scope: company
+    status: active
+  - id: chief-of-staff-personal
+    role: roles/chief-of-staff-personal.md
+    reports_to: marco
+    scope: personal
+    status: active
+  - id: cto
+    role: roles/cto.md
+    reports_to: marco
+    scope: company
+    status: active
+  - id: security-officer
+    role: roles/security-officer.md
+    reports_to: cto
+    critical_escalation_to: marco
+    scope: company
+    status: active
+  - id: cmo
+    role: roles/cmo.md
+    reports_to: marco
+    scope: company
+    status: active
+  - id: traders-hub-engineer
+    role: roles/traders-hub-engineer.md
+    reports_to: cto
+    scope: project:traders-hub
+    status: active
+  - id: trader-simulator
+    role: roles/trader-simulator.md
+    reports_to: traders-hub-engineer
+    scope: project:traders-hub
+    status: active
+  - id: designer
+    role: roles/designer.md
+    reports_to: cto
+    scope: capability:design
+    status: active
+  - id: customer-experience
+    role: roles/customer-experience.md
+    reports_to: traders-hub-engineer
+    scope: capability:customer-experience
+    status: active
+  - id: content-producer
+    role: roles/content-producer.md
+    reports_to: cmo
+    scope: capability:content
+    status: active
+  - id: sales-specialist
+    role: roles/sales-specialist.md
+    reports_to: cmo
+    scope: capability:sales
+    status: active
+  - id: scout
+    role: roles/scout.md
+    reports_to: cmo
+    scope: capability:research
+    status: active
+  - id: side-hustler
+    role: roles/side-hustler.md
+    reports_to: marco
+    scope: company
+    status: active

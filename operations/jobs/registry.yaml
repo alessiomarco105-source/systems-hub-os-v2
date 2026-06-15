@@ -1,0 +1,33 @@
+schema: systems_hub.job_registry/v2
+updated: 2026-06-15
+authority: definitions-only
+runtime_note: Existing schedules remain on their current runner until a v2 adapter is tested and approved.
+jobs:
+  - id: weekly-business-review
+    definition: weekly-business-review.md
+    owner: chief-of-staff-business
+    cadence: weekly
+    schedule: Monday 08:00
+    timezone: America/New_York
+    status: active-legacy-runner
+  - id: daily-agent-recap
+    definition: daily-agent-recap.md
+    owner: harness-orchestrator
+    cadence: daily
+    schedule: 20:00
+    timezone: America/New_York
+    status: active-legacy-runner
+  - id: security-exposure-review
+    definition: security-exposure-review.md
+    owner: security-officer
+    cadence: every-three-days
+    schedule: runner-managed
+    timezone: America/New_York
+    status: active-legacy-runner
+  - id: social-kpi-report
+    definition: social-kpi-report.md
+    owner: cmo
+    cadence: weekly
+    schedule: Sunday 19:00
+    timezone: America/New_York
+    status: active-legacy-runner
