@@ -1,0 +1,64 @@
+{
+  "schema": "systems_hub.task_manifest/v1",
+  "task_id": "social-kpi-report",
+  "task_kind": "standard",
+  "execution_status": "manual",
+  "role": "cmo",
+  "scope": "capability:marketing",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "source_root": ".",
+  "context": {
+    "allowed_files": [
+      "agents/roles/cmo.md",
+      "operations/jobs/social-kpi-report.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/launch-scoreboard.md",
+      "projects/traders-hub/reports/beta-signal-summary.md"
+    ],
+    "allowed_data_classes": ["internal"],
+    "max_files": 8,
+    "max_total_bytes": 131072
+  },
+  "permissions": {
+    "tools": ["read", "grep", "find", "ls"],
+    "write": false,
+    "external_actions": false
+  },
+  "budget": {
+    "max_input_tokens": 12000,
+    "max_output_tokens": 1600,
+    "max_total_tokens": 18000,
+    "max_cost_usd": 0.1
+  },
+  "prompt": "Produce an internal social KPI report using only supplied evidence. Begin exactly with ## Data Availability. Use exactly these H2 headings: Data Availability; Personal Trading Lane; Trader's Hub Brand Lane; Best Signal; Weakest Signal; Next Experiment; Evidence Quality. Track Instagram, X, TikTok, and YouTube, keeping personal trading and Trader's Hub separate. If screenshots, exports, or platform analytics are absent, mark numbers unknown and do not manufacture best or worst posts. Recommend one low-risk next experiment. Never claim trading profitability. Keep under 500 words.",
+  "output": {
+    "format": "markdown",
+    "max_words": 500,
+    "required_sections": [
+      "Data Availability",
+      "Personal Trading Lane",
+      "Trader's Hub Brand Lane",
+      "Best Signal",
+      "Weakest Signal",
+      "Next Experiment",
+      "Evidence Quality"
+    ],
+    "allow_preamble": false
+  },
+  "validation": {
+    "forbidden_patterns": [
+      "\\bprofitable trad(?:e|ing)\\b",
+      "\\bguaranteed returns?\\b",
+      "\\bconfirmed best-performing post\\b"
+    ],
+    "required_patterns": ["Instagram", "\\bX\\b", "TikTok", "YouTube", "unknown|missing"],
+    "section_required_patterns": {
+      "Personal Trading Lane": ["personal"],
+      "Trader's Hub Brand Lane": ["Trader's Hub"],
+      "Next Experiment": ["experiment"]
+    },
+    "require_evidence_labels": true
+  }
+}

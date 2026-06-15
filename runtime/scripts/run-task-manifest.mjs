@@ -68,15 +68,21 @@ function extractDataClass(text, path) {
 function validateManifest(manifest) {
   assertObject(manifest, "manifest");
   assertExactKeys(manifest, [
-    "schema", "task_id", "role", "scope", "provider", "model", "source_root",
-    "context", "permissions", "budget", "prompt", "output", "validation"
+    "schema", "task_id", "task_kind", "execution_status", "role", "scope",
+    "provider", "model", "source_root", "context", "permissions", "budget",
+    "prompt", "output", "validation", "review"
   ], "manifest");
 
   if (manifest.schema !== "systems_hub.task_manifest/v1") fail("unsupported manifest schema");
-  for (const field of ["task_id", "role", "scope", "provider", "model", "source_root", "prompt"]) {
+  for (const field of [
+    "task_id", "task_kind", "execution_status", "role", "scope",
+    "provider", "model", "source_root", "prompt"
+  ]) {
     assertString(manifest[field], field);
   }
   if (!/^[a-z0-9][a-z0-9-]{2,63}$/.test(manifest.task_id)) fail("invalid task_id");
+  if (!["standard", "review"].includes(manifest.task_kind)) fail("invalid task_kind");
+  if (!["manual", "draft"].includes(manifest.execution_status)) fail("invalid execution_status");
   if (!/^[a-z0-9][a-z0-9-]{2,63}$/.test(manifest.role)) fail("invalid role");
   if (!/^(company|personal|project:[a-z0-9-]+|capability:[a-z0-9-]+)$/.test(manifest.scope)) fail("invalid scope");
   if (manifest.provider !== "deepseek") fail("only deepseek is approved for this pilot");
@@ -96,7 +102,10 @@ function validateManifest(manifest) {
   if (manifest.context.max_total_bytes > 1048576) fail("context.max_total_bytes exceeds pilot maximum of 1 MiB");
   if (manifest.context.allowed_files.length > manifest.context.max_files) fail("allowed file count exceeds max_files");
   for (const dataClass of manifest.context.allowed_data_classes) {
-    if (!["public", "internal"].includes(dataClass)) {
+    if (!["public", "internal", "private", "protected"].includes(dataClass)) {
+      fail(`unsupported data class: ${dataClass}`);
+    }
+    if (manifest.execution_status === "manual" && !["public", "internal"].includes(dataClass)) {
       fail(`data class requires a future explicit provider approval: ${dataClass}`);
     }
   }
@@ -163,9 +172,71 @@ function validateManifest(manifest) {
       fail(`invalid validation regex: ${pattern}`);
     }
   }
+
+  if (manifest.task_kind === "review") {
+    assertObject(manifest.review, "review");
+    assertExactKeys(manifest.review, [
+      "source_receipt", "required_worker_task_id", "require_worker_validation", "dimensions"
+    ], "review");
+    assertString(manifest.review.source_receipt, "review.source_receipt");
+    assertString(manifest.review.required_worker_task_id, "review.required_worker_task_id");
+    if (!["pass", "any"].includes(manifest.review.require_worker_validation)) {
+      fail("review.require_worker_validation must be pass or any");
+    }
+    assertStringArray(manifest.review.dimensions, "review.dimensions", { min: 1, unique: true });
+    const allowedDimensions = new Set([
+      "factual-accuracy", "source-support", "priority-integrity", "scope-integrity",
+      "missing-evidence", "risk-coverage", "decision-quality"
+    ]);
+    for (const dimension of manifest.review.dimensions) {
+      if (!allowedDimensions.has(dimension)) fail(`unsupported review dimension: ${dimension}`);
+    }
+  } else if ("review" in manifest) {
+    fail("standard tasks may not contain review configuration");
+  }
 }
 
-async function validateContext(manifest) {
+async function validateReviewSource(manifest) {
+  if (manifest.task_kind !== "review") return undefined;
+  const receiptRelative = manifest.review.source_receipt;
+  if (!safeRelativePath(receiptRelative) ||
+      !receiptRelative.startsWith("operations/runs/usage/") ||
+      !receiptRelative.endsWith(".json")) {
+    fail("review source receipt must be a safe JSON path under operations/runs/usage");
+  }
+  const receiptAbsolute = resolve(repoRoot, receiptRelative);
+  const receipt = JSON.parse(await readFile(receiptAbsolute, "utf8"));
+  if (receipt.schema !== "systems_hub.run_receipt/v1") fail("review source has unsupported receipt schema");
+  if (receipt.task_id !== manifest.review.required_worker_task_id) {
+    fail(`review source worker task mismatch: ${receipt.task_id}`);
+  }
+  if (receipt.task_kind && receipt.task_kind !== "standard") {
+    fail("review source must be a standard worker task");
+  }
+  if (manifest.review.require_worker_validation === "pass" &&
+      receipt.validation?.status !== "pass") {
+    fail("review source worker validation did not pass");
+  }
+  const outputRelative = receipt.output?.path;
+  if (!safeRelativePath(outputRelative) ||
+      !outputRelative.startsWith("operations/runs/usage/") ||
+      !outputRelative.endsWith(".md")) {
+    fail("review source output path is invalid");
+  }
+  const outputAbsolute = resolve(repoRoot, outputRelative);
+  const output = await readFile(outputAbsolute);
+  const actualHash = createHash("sha256").update(output).digest("hex");
+  if (actualHash !== receipt.output.sha256) fail("review source output hash mismatch");
+  return {
+    receipt,
+    artifacts: [
+      { path: receiptRelative, bytes: (await stat(receiptAbsolute)).size, dataClass: "internal" },
+      { path: outputRelative, bytes: output.length, dataClass: "internal" }
+    ]
+  };
+}
+
+async function validateContext(manifest, reviewSource) {
   const rolePath = `agents/roles/${manifest.role}.md`;
   if (!manifest.context.allowed_files.includes(rolePath)) {
     fail(`selected role file must be included: ${rolePath}`);
@@ -192,13 +263,23 @@ async function validateContext(manifest) {
     totalBytes += info.size;
     files.push({ path, bytes: info.size, dataClass });
   }
+  for (const artifact of reviewSource?.artifacts || []) {
+    if (files.some(file => file.path === artifact.path)) {
+      fail(`review artifact is duplicated in allowed_files: ${artifact.path}`);
+    }
+    totalBytes += artifact.bytes;
+    files.push(artifact);
+  }
+  if (files.length > manifest.context.max_files) {
+    fail(`effective context file count ${files.length} exceeds limit ${manifest.context.max_files}`);
+  }
   if (totalBytes > manifest.context.max_total_bytes) {
     fail(`context size ${totalBytes} exceeds limit ${manifest.context.max_total_bytes}`);
   }
   return { files, totalBytes };
 }
 
-function runLauncher(manifest) {
+function runLauncher(manifest, contextInfo) {
   const args = [
     "--source-root", repoRoot,
     "--model", manifest.model,
@@ -207,7 +288,7 @@ function runLauncher(manifest) {
     "--output-mode", "json",
     "--prompt", manifest.prompt
   ];
-  for (const path of manifest.context.allowed_files) args.push("--allow-file", path);
+  for (const file of contextInfo.files) args.push("--allow-file", file.path);
 
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(launcher, args, {
@@ -352,7 +433,9 @@ function timestampId(date) {
   return date.toISOString().replace(/[:.]/g, "-");
 }
 
-async function writeArtifacts(manifest, contextInfo, result, outputValidation, startedAt, finishedAt) {
+async function writeArtifacts(
+  manifest, contextInfo, reviewSource, result, outputValidation, startedAt, finishedAt
+) {
   const year = String(finishedAt.getUTCFullYear());
   const month = String(finishedAt.getUTCMonth() + 1).padStart(2, "0");
   const runId = `${timestampId(finishedAt)}-${manifest.task_id}`;
@@ -368,6 +451,7 @@ async function writeArtifacts(manifest, contextInfo, result, outputValidation, s
     schema: "systems_hub.run_receipt/v1",
     run_id: runId,
     task_id: manifest.task_id,
+    task_kind: manifest.task_kind,
     started_at: startedAt.toISOString(),
     finished_at: finishedAt.toISOString(),
     provider: manifest.provider,
@@ -400,14 +484,23 @@ async function writeArtifacts(manifest, contextInfo, result, outputValidation, s
       human_review_required: true
     }
   };
+  if (reviewSource) {
+    receipt.review = {
+      source_receipt: manifest.review.source_receipt,
+      source_output: reviewSource.receipt.output.path,
+      source_output_sha256: reviewSource.receipt.output.sha256
+    };
+  }
   await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" });
   return { receipt, receiptPath, outputPath };
 }
 
 async function main() {
-  const manifestArgument = process.argv[2];
-  if (!manifestArgument || process.argv.length !== 3) {
-    fail("usage: run-task-manifest.mjs <manifest.json>");
+  const validateOnly = process.argv[2] === "--validate-only";
+  const manifestArgument = validateOnly ? process.argv[3] : process.argv[2];
+  const expectedArguments = validateOnly ? 4 : 3;
+  if (!manifestArgument || process.argv.length !== expectedArguments) {
+    fail("usage: run-task-manifest.mjs [--validate-only] <manifest.json>");
   }
   const manifestPath = resolve(process.cwd(), manifestArgument);
   const taskDirectory = resolve(repoRoot, "operations/tasks");
@@ -417,15 +510,25 @@ async function main() {
   }
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   validateManifest(manifest);
-  const contextInfo = await validateContext(manifest);
+  const reviewSource = await validateReviewSource(manifest);
+  const contextInfo = await validateContext(manifest, reviewSource);
+  if (validateOnly) {
+    process.stdout.write(
+      `Manifest valid: ${manifest.task_id} (${manifest.execution_status}, ${contextInfo.files.length} files)\n`
+    );
+    return;
+  }
+  if (manifest.execution_status !== "manual") {
+    fail(`task is not executable: execution_status=${manifest.execution_status}`);
+  }
 
   const startedAt = new Date();
-  const jsonl = await runLauncher(manifest);
+  const jsonl = await runLauncher(manifest, contextInfo);
   const result = extractAssistant(jsonl);
   const finishedAt = new Date();
   const outputValidation = validateOutput(manifest, result);
   const artifacts = await writeArtifacts(
-    manifest, contextInfo, result, outputValidation, startedAt, finishedAt
+    manifest, contextInfo, reviewSource, result, outputValidation, startedAt, finishedAt
   );
 
   process.stdout.write(`${result.text}\n\n`);

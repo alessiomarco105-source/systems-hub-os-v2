@@ -28,3 +28,26 @@ The runner writes:
 - a JSON receipt beside it with token usage, cost, context files, hash, validation failures, and promotion status.
 
 A validator pass never removes the human-review requirement.
+
+## Independent Review
+
+Review manifests use `task_kind: review` and reference a completed worker receipt.
+Before contacting the reviewer model, the runner verifies:
+
+- worker task identity;
+- worker validation status when required;
+- worker output location;
+- worker output SHA-256 against its receipt.
+
+The reviewer runs in a new Pi session with a different role and prompt. It cannot modify the worker output or approve promotion. A reviewer pass means the artifact may proceed to Marco's review.
+
+## Core Routines
+
+| Routine | V2 state |
+|---|---|
+| Weekly Business Review | manual, read-only |
+| Daily Agent Recap | manual, read-only |
+| Social KPI Report | manual, read-only |
+| Security Exposure Review | draft; protected-data provider approval required |
+
+No v2 manifest is connected to a scheduler or Telegram.

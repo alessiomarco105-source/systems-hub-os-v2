@@ -1,3 +1,11 @@
+---
+owner: chief-of-staff-business
+approver: marco
+status: canonical
+data_class: internal
+updated: 2026-06-15
+---
+
 # Systems Hub Decision Log
 
 Append-only. Only approved decisions belong here.

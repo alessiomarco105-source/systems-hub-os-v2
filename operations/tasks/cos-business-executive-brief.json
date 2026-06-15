@@ -1,6 +1,8 @@
 {
   "schema": "systems_hub.task_manifest/v1",
   "task_id": "cos-business-executive-brief",
+  "task_kind": "standard",
+  "execution_status": "manual",
   "role": "chief-of-staff-business",
   "scope": "company",
   "provider": "deepseek",

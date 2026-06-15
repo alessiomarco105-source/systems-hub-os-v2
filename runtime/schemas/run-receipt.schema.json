@@ -22,6 +22,7 @@
     "schema": { "const": "systems_hub.run_receipt/v1" },
     "run_id": { "type": "string" },
     "task_id": { "type": "string" },
+    "task_kind": { "enum": ["standard", "review"] },
     "started_at": { "type": "string", "format": "date-time" },
     "finished_at": { "type": "string", "format": "date-time" },
     "provider": { "type": "string" },
@@ -71,6 +72,15 @@
       "properties": {
         "eligible": { "type": "boolean" },
         "human_review_required": { "const": true }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["source_receipt", "source_output", "source_output_sha256"],
+      "properties": {
+        "source_receipt": { "type": "string" },
+        "source_output": { "type": "string" },
+        "source_output_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
       }
     }
   }

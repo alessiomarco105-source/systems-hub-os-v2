@@ -1,0 +1,64 @@
+{
+  "schema": "systems_hub.task_manifest/v1",
+  "task_id": "security-exposure-review",
+  "task_kind": "standard",
+  "execution_status": "draft",
+  "role": "security-officer",
+  "scope": "company",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "source_root": ".",
+  "context": {
+    "allowed_files": [
+      "agents/roles/security-officer.md",
+      "operations/jobs/security-exposure-review.md",
+      "governance/security.md",
+      "governance/model-access.md",
+      "company/operations/risk-register.md",
+      "projects/traders-hub/security/risk-register.md",
+      "projects/traders-hub/security/legal-status.md"
+    ],
+    "allowed_data_classes": ["internal", "protected"],
+    "max_files": 9,
+    "max_total_bytes": 196608
+  },
+  "permissions": {
+    "tools": ["read", "grep", "find", "ls"],
+    "write": false,
+    "external_actions": false
+  },
+  "budget": {
+    "max_input_tokens": 18000,
+    "max_output_tokens": 2600,
+    "max_total_tokens": 28000,
+    "max_cost_usd": 0.25
+  },
+  "prompt": "Draft a non-destructive security exposure review using only supplied approved evidence. Begin exactly with ## Scope. Use exactly these H2 headings: Scope; Severity-Ranked Findings; Sanitized Evidence; Remediation; Verification Needed; Approval Needed; Evidence Quality. Do not expose secrets, claim tests were run when only documents were reviewed, exploit any target, change dependencies, or recommend production action without approval. Keep under 900 words.",
+  "output": {
+    "format": "markdown",
+    "max_words": 900,
+    "required_sections": [
+      "Scope",
+      "Severity-Ranked Findings",
+      "Sanitized Evidence",
+      "Remediation",
+      "Verification Needed",
+      "Approval Needed",
+      "Evidence Quality"
+    ],
+    "allow_preamble": false
+  },
+  "validation": {
+    "forbidden_patterns": [
+      "\\bexploited production\\b",
+      "\\bthe secret value is\\b",
+      "\\bthe credential is\\b"
+    ],
+    "required_patterns": ["High|Medium|Low", "approval", "verification"],
+    "section_required_patterns": {
+      "Scope": ["document|read-only|scope"],
+      "Approval Needed": ["approval|none"]
+    },
+    "require_evidence_labels": true
+  }
+}

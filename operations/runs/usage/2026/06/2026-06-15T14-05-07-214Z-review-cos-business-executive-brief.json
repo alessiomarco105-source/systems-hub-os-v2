@@ -1,0 +1,76 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T14-05-07-214Z-review-cos-business-executive-brief",
+  "task_id": "review-cos-business-executive-brief",
+  "task_kind": "review",
+  "started_at": "2026-06-15T14:04:03.808Z",
+  "finished_at": "2026-06-15T14:05:07.214Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "context": {
+    "files": [
+      "agents/roles/independent-reviewer.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md",
+      "operations/runs/usage/2026/06/2026-06-15T10-38-16-211Z-cos-business-executive-brief.json",
+      "operations/runs/usage/2026/06/2026-06-15T10-38-16-211Z-cos-business-executive-brief.md"
+    ],
+    "file_count": 7,
+    "total_bytes": 11610
+  },
+  "usage": {
+    "input": 2871,
+    "output": 2785,
+    "cache_read": 2432,
+    "cache_write": 0,
+    "total_tokens": 8088,
+    "cost_usd": 0.003680651
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T14-05-07-214Z-review-cos-business-executive-brief.md",
+    "sha256": "7b80b25e24678dfaf1c320c58635732413e9003e9e8ff7c363e89bdd889fc623",
+    "word_count": 476
+  },
+  "validation": {
+    "status": "pass",
+    "checks": [
+      "output words: 476/650",
+      "output starts with: ## Verdict",
+      "required section: Verdict",
+      "required section: Material Findings",
+      "required section: Unsupported Claims",
+      "required section: Missing Evidence",
+      "required section: Priority and Scope Integrity",
+      "required section: Recommendation",
+      "required section: Human Decision Required",
+      "section pattern present (Verdict): \\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "section pattern present (Priority and Scope Integrity): priorit",
+      "section pattern present (Priority and Scope Integrity): scope",
+      "section pattern present (Human Decision Required): Marco|human",
+      "forbidden pattern absent: \\bI approve\\b",
+      "forbidden pattern absent: \\bapproved for publication\\b",
+      "forbidden pattern absent: \\bno human review required\\b",
+      "forbidden pattern absent: ^Now I",
+      "forbidden pattern absent: ^Here is",
+      "required pattern present: \\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "required pattern present: \\bhuman\\b",
+      "evidence language present",
+      "input tokens: 2871/14000",
+      "output tokens: 2785/4000",
+      "total tokens: 8088/22000",
+      "cost USD: 0.003680651/0.25"
+    ],
+    "failures": []
+  },
+  "promotion": {
+    "eligible": true,
+    "human_review_required": true
+  },
+  "review": {
+    "source_receipt": "operations/runs/usage/2026/06/2026-06-15T10-38-16-211Z-cos-business-executive-brief.json",
+    "source_output": "operations/runs/usage/2026/06/2026-06-15T10-38-16-211Z-cos-business-executive-brief.md",
+    "source_output_sha256": "07aa7f6dfd713b7436e5fc0d958ec8f4ef2c40767d9d05c05a76cdceeef649a6"
+  }
+}

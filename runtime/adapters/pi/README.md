@@ -58,3 +58,17 @@ On 2026-06-15, DeepSeek V4 Flash completed a read-only COS-Business brief using 
 - keeps human review mandatory even when deterministic checks pass.
 
 `context-mode` has not been installed. It may later optimize long-session context after source review, but provider usage events remain the accounting source of truth.
+
+## Independent Review Gate
+
+The independent reviewer:
+
+- uses a dedicated canonical role;
+- starts a new provider session;
+- receives the worker output only through a verified receipt;
+- checks the worker output hash before any review call;
+- evaluates factual support, omissions, priorities, scope, risk, and decisions;
+- produces its own usage receipt linked to the worker receipt;
+- cannot approve promotion or remove Marco's review requirement.
+
+DeepSeek V4 Pro is used for the pilot reviewer because Flash repeatedly failed a simple formatting gate and produced shallower omission analysis. The successful Pro review cost `$0.003680651`.

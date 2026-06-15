@@ -5,29 +5,37 @@ runtime_note: Existing schedules remain on their current runner until a v2 adapt
 jobs:
   - id: weekly-business-review
     definition: weekly-business-review.md
+    task_manifest: ../tasks/weekly-business-review.json
     owner: chief-of-staff-business
     cadence: weekly
     schedule: Monday 08:00
     timezone: America/New_York
+    v2_execution: manual-read-only
     status: active-legacy-runner
   - id: daily-agent-recap
     definition: daily-agent-recap.md
+    task_manifest: ../tasks/daily-agent-recap.json
     owner: harness-orchestrator
     cadence: daily
     schedule: 20:00
     timezone: America/New_York
+    v2_execution: manual-read-only
     status: active-legacy-runner
   - id: security-exposure-review
     definition: security-exposure-review.md
+    task_manifest: ../tasks/security-exposure-review.json
     owner: security-officer
     cadence: every-three-days
     schedule: runner-managed
     timezone: America/New_York
+    v2_execution: draft-provider-approval-required
     status: active-legacy-runner
   - id: social-kpi-report
     definition: social-kpi-report.md
+    task_manifest: ../tasks/social-kpi-report.json
     owner: cmo
     cadence: weekly
     schedule: Sunday 19:00
     timezone: America/New_York
+    v2_execution: manual-read-only
     status: active-legacy-runner

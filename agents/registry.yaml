@@ -77,3 +77,9 @@ agents:
     reports_to: marco
     scope: company
     status: active
+  - id: independent-reviewer
+    role: roles/independent-reviewer.md
+    reports_to: harness-orchestrator
+    critical_escalation_to: marco
+    scope: company
+    status: active
