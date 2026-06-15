@@ -1,0 +1,92 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T15-43-47-003Z-review-weekly-business-review",
+  "task_id": "review-weekly-business-review",
+  "task_kind": "review",
+  "started_at": "2026-06-15T15:42:17.816Z",
+  "finished_at": "2026-06-15T15:43:47.003Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "contract": {
+    "manifest_sha256": "705ea86acddd8a6d5fdf0bc346ac7157f64a26d4b6a7cddc629538c80aeb6c28",
+    "prompt_sha256": "a320a5f49d498702172251488761e738bc0a51b19c458b931c229dc0e87f1d79",
+    "ephemeral_manifest": true,
+    "manifest_path": "operations/runs/usage/2026/06/2026-06-15T15-43-47-003Z-review-weekly-business-review.manifest.json"
+  },
+  "context": {
+    "files": [
+      "agents/roles/independent-reviewer.md",
+      "agents/roles/chief-of-staff-business.md",
+      "operations/jobs/weekly-business-review.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/okrs/2026-q2.md",
+      "company/portfolio/status.md",
+      "company/operations/risk-register.md",
+      "operations/decisions/log.md",
+      "projects/traders-hub/reports/current-status.md",
+      "projects/traders-hub/reports/launch-scoreboard.md",
+      "operations/runs/usage/2026/06/2026-06-15T15-42-17-773Z-weekly-business-review.json",
+      "operations/runs/usage/2026/06/2026-06-15T15-42-17-773Z-weekly-business-review.md",
+      "operations/runs/usage/2026/06/2026-06-15T15-42-17-773Z-weekly-business-review.manifest.json"
+    ],
+    "file_count": 14,
+    "total_bytes": 29196
+  },
+  "usage": {
+    "input": 1934,
+    "output": 3462,
+    "cache_read": 8320,
+    "cache_write": 0,
+    "total_tokens": 13716,
+    "cost_usd": 0.0038833900000000005
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T15-43-47-003Z-review-weekly-business-review.md",
+    "sha256": "7dff041323c885e5e462597533bd7a40eaae67eb2f5fe15eebe620b1e5ad85ef",
+    "word_count": 562
+  },
+  "validation": {
+    "status": "pass",
+    "checks": [
+      "output words: 562/750",
+      "output starts with: ## Verdict",
+      "required section: Verdict",
+      "required section: Material Findings",
+      "required section: Unsupported Claims",
+      "required section: Missing Evidence",
+      "required section: Priority and Scope Integrity",
+      "required section: Risk and Decision Quality",
+      "required section: Recommendation",
+      "required section: Human Decision Required",
+      "section pattern present (Verdict): \\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "section pattern present (Priority and Scope Integrity): Priority:",
+      "section pattern present (Priority and Scope Integrity): Scope:",
+      "section pattern present (Risk and Decision Quality): Risk:",
+      "section pattern present (Risk and Decision Quality): Decision:",
+      "section pattern present (Human Decision Required): Marco review required:\\s*(?:Yes|No)\\b",
+      "forbidden pattern absent: \\bI approve\\b",
+      "forbidden pattern absent: \\bapproved for publication\\b",
+      "forbidden pattern absent: \\bno human review required\\b",
+      "forbidden pattern absent: ^Now I",
+      "forbidden pattern absent: ^Here is",
+      "required pattern present: \\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "required pattern present: Marco review required:\\s*(?:Yes|No)\\b",
+      "evidence language present",
+      "input tokens: 1934/22000",
+      "output tokens: 3462/6000",
+      "total tokens: 13716/33000",
+      "cost USD: 0.0038833900000000005/0.25"
+    ],
+    "failures": []
+  },
+  "promotion": {
+    "eligible": true,
+    "human_review_required": true
+  },
+  "review": {
+    "source_receipt": "operations/runs/usage/2026/06/2026-06-15T15-42-17-773Z-weekly-business-review.json",
+    "source_output": "operations/runs/usage/2026/06/2026-06-15T15-42-17-773Z-weekly-business-review.md",
+    "source_output_sha256": "14d4c27dd75c465a9b8a3a73037cc9f1196fb1597b13875b01dc03747b959a64"
+  }
+}

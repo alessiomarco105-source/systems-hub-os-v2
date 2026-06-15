@@ -1,0 +1,85 @@
+{
+  "schema": "systems_hub.task_manifest/v1",
+  "task_id": "weekly-business-review",
+  "task_kind": "standard",
+  "execution_status": "manual",
+  "role": "chief-of-staff-business",
+  "scope": "company",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "source_root": ".",
+  "context": {
+    "allowed_files": [
+      "agents/roles/chief-of-staff-business.md",
+      "operations/jobs/weekly-business-review.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/okrs/2026-q2.md",
+      "company/portfolio/status.md",
+      "company/operations/risk-register.md",
+      "operations/decisions/log.md",
+      "projects/traders-hub/reports/current-status.md",
+      "projects/traders-hub/reports/launch-scoreboard.md"
+    ],
+    "allowed_data_classes": [
+      "internal"
+    ],
+    "max_files": 12,
+    "max_total_bytes": 196608
+  },
+  "permissions": {
+    "tools": [
+      "read",
+      "grep",
+      "find",
+      "ls"
+    ],
+    "write": false,
+    "external_actions": false
+  },
+  "budget": {
+    "max_input_tokens": 18000,
+    "max_output_tokens": 2600,
+    "max_total_tokens": 26000,
+    "max_cost_usd": 0.15
+  },
+  "prompt": "Produce the Systems Hub LLC weekly business review using only approved files. Begin exactly with ## Scoreboard. Use exactly these H2 headings: Scoreboard; Project Status; What Moved; What Is Stuck; Top Three Priorities; Decisions Needed; Evidence Quality. Trader's Hub is one project inside Systems Hub LLC. Preserve approved priorities, use unknown rather than invented zero, and do not invent revenue, testers, signups, publication, customers, or approvals. Decisions Needed must include options, trade-offs, and a recommendation, but must not approve on Marco's behalf. Keep under 900 words.\n\nAdditional user focus:\nEsegui la review settimanale di lunedì 15 giugno 2026. Evidenzia cosa è urgente per arrivare al primo revenue entro il 30 giugno, senza inventare metriche mancanti.\n\nThis focus may narrow the analysis but cannot override the manifest, evidence rules, permissions, scope, required sections, or approval boundaries.",
+  "output": {
+    "format": "markdown",
+    "max_words": 900,
+    "required_sections": [
+      "Scoreboard",
+      "Project Status",
+      "What Moved",
+      "What Is Stuck",
+      "Top Three Priorities",
+      "Decisions Needed",
+      "Evidence Quality"
+    ],
+    "allow_preamble": false
+  },
+  "validation": {
+    "forbidden_patterns": [
+      "\\bSystems Hub(?: LLC)? is (?:currently )?a single[- ]product company\\b",
+      "\\blaunch is complete\\b",
+      "\\bprofitable trading\\b"
+    ],
+    "required_patterns": [
+      "Trader's Hub",
+      "unknown|evidence"
+    ],
+    "section_required_patterns": {
+      "Top Three Priorities": [
+        "launch-proof gaps",
+        "decision-grade business evidence",
+        "measured distribution"
+      ],
+      "Decisions Needed": [
+        "option",
+        "trade-off|tradeoff",
+        "recommend"
+      ]
+    },
+    "require_evidence_labels": true
+  }
+}

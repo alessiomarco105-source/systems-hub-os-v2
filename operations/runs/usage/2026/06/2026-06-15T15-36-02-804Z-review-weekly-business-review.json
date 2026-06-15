@@ -1,0 +1,94 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T15-36-02-804Z-review-weekly-business-review",
+  "task_id": "review-weekly-business-review",
+  "task_kind": "review",
+  "started_at": "2026-06-15T15:34:16.110Z",
+  "finished_at": "2026-06-15T15:36:02.804Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "contract": {
+    "manifest_sha256": "e06f6f394e724fd5f360c180615d31fb0ba0fc6ddb61f956551bad1ca547f6fa",
+    "prompt_sha256": "a320a5f49d498702172251488761e738bc0a51b19c458b931c229dc0e87f1d79",
+    "ephemeral_manifest": true,
+    "manifest_path": "operations/runs/usage/2026/06/2026-06-15T15-36-02-804Z-review-weekly-business-review.manifest.json"
+  },
+  "context": {
+    "files": [
+      "agents/roles/independent-reviewer.md",
+      "agents/roles/chief-of-staff-business.md",
+      "operations/jobs/weekly-business-review.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/okrs/2026-q2.md",
+      "company/portfolio/status.md",
+      "company/operations/risk-register.md",
+      "operations/decisions/log.md",
+      "projects/traders-hub/reports/current-status.md",
+      "projects/traders-hub/reports/launch-scoreboard.md",
+      "operations/runs/usage/2026/06/2026-06-15T15-34-16-063Z-weekly-business-review.json",
+      "operations/runs/usage/2026/06/2026-06-15T15-34-16-063Z-weekly-business-review.md",
+      "operations/runs/usage/2026/06/2026-06-15T15-34-16-063Z-weekly-business-review.manifest.json"
+    ],
+    "file_count": 14,
+    "total_bytes": 28593
+  },
+  "usage": {
+    "input": 3243,
+    "output": 5281,
+    "cache_read": 6400,
+    "cache_write": 0,
+    "total_tokens": 14924,
+    "cost_usd": 0.006028375
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T15-36-02-804Z-review-weekly-business-review.md",
+    "sha256": "d5c061a4037ccce0c992ef505eb3ce150e149167ec954f1fe0123e26d5870b5a",
+    "word_count": 667
+  },
+  "validation": {
+    "status": "fail",
+    "checks": [
+      "output words: 667/750",
+      "output starts with: ## Verdict",
+      "required section: Verdict",
+      "required section: Material Findings",
+      "required section: Unsupported Claims",
+      "required section: Missing Evidence",
+      "required section: Priority and Scope Integrity",
+      "required section: Risk and Decision Quality",
+      "required section: Recommendation",
+      "required section: Human Decision Required",
+      "section pattern present (Verdict): \\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "section pattern present (Priority and Scope Integrity): Priority:",
+      "section pattern present (Priority and Scope Integrity): Scope:",
+      "section pattern present (Risk and Decision Quality): Risk:",
+      "section pattern present (Risk and Decision Quality): Decision:",
+      "section pattern present (Human Decision Required): Marco review required:\\s*(?:Yes|No)\\b",
+      "forbidden pattern absent: \\bI approve\\b",
+      "forbidden pattern absent: \\bapproved for publication\\b",
+      "forbidden pattern absent: \\bno human review required\\b",
+      "forbidden pattern absent: ^Now I",
+      "forbidden pattern absent: ^Here is",
+      "required pattern present: \\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "required pattern present: Marco review required:\\s*(?:Yes|No)\\b",
+      "evidence language present",
+      "input tokens: 3243/22000",
+      "output tokens: 5281/5000",
+      "total tokens: 14924/32000",
+      "cost USD: 0.006028375/0.25"
+    ],
+    "failures": [
+      "output token budget exceeded"
+    ]
+  },
+  "promotion": {
+    "eligible": false,
+    "human_review_required": true
+  },
+  "review": {
+    "source_receipt": "operations/runs/usage/2026/06/2026-06-15T15-34-16-063Z-weekly-business-review.json",
+    "source_output": "operations/runs/usage/2026/06/2026-06-15T15-34-16-063Z-weekly-business-review.md",
+    "source_output_sha256": "099dfeffcddb96a0a5b07fcca3fc6b735468688c8018edbe322250c71fc9fc8c"
+  }
+}
