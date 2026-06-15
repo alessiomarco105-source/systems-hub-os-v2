@@ -1,0 +1,78 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T14-40-47-616Z-cos-business-executive-brief",
+  "task_id": "cos-business-executive-brief",
+  "task_kind": "standard",
+  "started_at": "2026-06-15T14:40:11.440Z",
+  "finished_at": "2026-06-15T14:40:47.616Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "contract": {
+    "manifest_sha256": "47b7c9bbfc6eff77e83879b2d036f50cb207f7f60a2b6dc973ba0e494dd7633c",
+    "prompt_sha256": "b9913cc8404fc0df926cef96679247dfe8ace0dfba350d2366507147320e8c4b",
+    "ephemeral_manifest": true,
+    "manifest_path": "operations/runs/usage/2026/06/2026-06-15T14-40-47-616Z-cos-business-executive-brief.manifest.json"
+  },
+  "context": {
+    "files": [
+      "agents/roles/chief-of-staff-business.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "file_count": 5,
+    "total_bytes": 6483
+  },
+  "usage": {
+    "input": 140,
+    "output": 753,
+    "cache_read": 5376,
+    "cache_write": 0,
+    "total_tokens": 6269,
+    "cost_usd": 0.0002454928
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T14-40-47-616Z-cos-business-executive-brief.md",
+    "sha256": "fe2399f03c1367a84d0dae70eca7e3f639f5507189833cfc1fc8ccfb0bd172d8",
+    "word_count": 375
+  },
+  "validation": {
+    "status": "pass",
+    "checks": [
+      "output words: 375/550",
+      "output starts with: ## Company Status",
+      "required section: Company Status",
+      "required section: What Moved",
+      "required section: Blocked or Unknown",
+      "required section: Top Three Priorities",
+      "required section: Decisions Required",
+      "required section: Evidence Quality",
+      "section pattern present (Company Status): Trading Edge Refinement.{0,80}active personal lane",
+      "section pattern present (Blocked or Unknown): approved and pending beta account behavior",
+      "section pattern present (Top Three Priorities): launch-proof gaps",
+      "section pattern present (Top Three Priorities): decision-grade business evidence",
+      "section pattern present (Top Three Priorities): measured distribution",
+      "forbidden pattern absent: \\bSystems Hub(?: LLC)? is (?:currently )?a single[- ]product company\\b",
+      "forbidden pattern absent: \\bonly product company\\b",
+      "forbidden pattern absent: ^Here is",
+      "forbidden pattern absent: \\blaunch is complete\\b",
+      "forbidden pattern absent: \\bprofitable trading\\b",
+      "forbidden pattern absent: \\bsigned git commit\\b",
+      "forbidden pattern absent: \\bsocial[- ]KPI report\\b",
+      "forbidden pattern absent: \\bnot all (?:gaps|items) can close simultaneously\\b",
+      "required pattern present: (?:one|only|sole) active (?:company )?product project",
+      "required pattern present: Trader's Hub",
+      "evidence language present",
+      "input tokens: 140/12000",
+      "output tokens: 753/6000",
+      "total tokens: 6269/18000",
+      "cost USD: 0.0002454928/0.1"
+    ],
+    "failures": []
+  },
+  "promotion": {
+    "eligible": true,
+    "human_review_required": true
+  }
+}

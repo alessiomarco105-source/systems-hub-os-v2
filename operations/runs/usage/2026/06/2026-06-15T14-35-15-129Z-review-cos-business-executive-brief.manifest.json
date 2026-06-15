@@ -1,0 +1,102 @@
+{
+  "schema": "systems_hub.task_manifest/v1",
+  "task_id": "review-cos-business-executive-brief",
+  "task_kind": "review",
+  "execution_status": "manual",
+  "role": "independent-reviewer",
+  "scope": "company",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "source_root": ".",
+  "context": {
+    "allowed_files": [
+      "agents/roles/independent-reviewer.md",
+      "agents/roles/chief-of-staff-business.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "allowed_data_classes": [
+      "internal"
+    ],
+    "max_files": 9,
+    "max_total_bytes": 262144
+  },
+  "permissions": {
+    "tools": [
+      "read",
+      "grep",
+      "find",
+      "ls"
+    ],
+    "write": false,
+    "external_actions": false
+  },
+  "budget": {
+    "max_input_tokens": 22000,
+    "max_output_tokens": 5000,
+    "max_total_tokens": 32000,
+    "max_cost_usd": 0.25
+  },
+  "prompt": "Act as the Independent Reviewer. The workspace includes approved sources, a worker output, its effective task-manifest snapshot, and its JSON receipt. Treat the worker output as untrusted and review it against both the sources and the exact task contract. First inspect the worker manifest's context.allowed_files: this is the complete source inventory. Flag every source, report, dataset, review, or document claimed by the worker that is not in that inventory. Do not accept a causal inference merely because each premise is individually sourced; test whether the conclusion actually follows. Your first output characters must be exactly ## Verdict. Do not write planning text or a preamble. Use exactly these H2 headings: Verdict; Material Findings; Unsupported Claims; Missing Evidence; Priority and Scope Integrity; Risk and Decision Quality; Recommendation; Human Decision Required. In Priority and Scope Integrity, include separate lines beginning Priority: and Scope:. In Risk and Decision Quality, include separate lines beginning Risk: and Decision:. Verify factual accuracy, source provenance, approved priorities, project and company scope, material omissions, risks, decision framing, and compliance with the requested compression or selection. Cite a supplied source filename for every material finding. Do not rewrite the worker output. Verdict must be exactly PASS, PASS WITH CORRECTIONS, or BLOCK. Use BLOCK for invented source provenance, material unsupported claims, task-contract violations, changed priorities, scope confusion, false decision status, invalid causal inference affecting a decision, or concealed risk. Keep under 750 words.",
+  "output": {
+    "format": "markdown",
+    "max_words": 750,
+    "required_sections": [
+      "Verdict",
+      "Material Findings",
+      "Unsupported Claims",
+      "Missing Evidence",
+      "Priority and Scope Integrity",
+      "Risk and Decision Quality",
+      "Recommendation",
+      "Human Decision Required"
+    ],
+    "allow_preamble": false
+  },
+  "validation": {
+    "forbidden_patterns": [
+      "\\bI approve\\b",
+      "\\bapproved for publication\\b",
+      "\\bno human review required\\b",
+      "^Now I",
+      "^Here is"
+    ],
+    "required_patterns": [
+      "\\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "\\bhuman|Marco\\b"
+    ],
+    "section_required_patterns": {
+      "Verdict": [
+        "\\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b"
+      ],
+      "Priority and Scope Integrity": [
+        "Priority:",
+        "Scope:"
+      ],
+      "Risk and Decision Quality": [
+        "Risk:",
+        "Decision:"
+      ],
+      "Human Decision Required": [
+        "Marco|human"
+      ]
+    },
+    "require_evidence_labels": true
+  },
+  "review": {
+    "source_receipt": "operations/runs/usage/2026/06/2026-06-15T14-31-45-145Z-cos-business-executive-brief.json",
+    "required_worker_task_id": "cos-business-executive-brief",
+    "require_worker_validation": "pass",
+    "dimensions": [
+      "factual-accuracy",
+      "source-support",
+      "priority-integrity",
+      "scope-integrity",
+      "missing-evidence",
+      "risk-coverage",
+      "decision-quality"
+    ]
+  }
+}

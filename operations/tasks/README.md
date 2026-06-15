@@ -51,3 +51,32 @@ The reviewer runs in a new Pi session with a different role and prompt. It canno
 | Security Exposure Review | draft; protected-data provider approval required |
 
 No v2 manifest is connected to a scheduler or Telegram.
+
+## Terminal CLI
+
+`hub` is installed locally through:
+
+`~/.local/bin/hub`
+
+Available commands:
+
+| Command | Purpose |
+|---|---|
+| `hub list` | Show canonical tasks, state, and model |
+| `hub validate [task]` | Validate one or all manifests without an API call |
+| `hub run <task>` | Run a manual task through the restricted runtime |
+| `hub run <task> --input "..."` | Add a bounded task focus without changing permissions or context |
+| `hub run <task> --review` | Run the worker, then review the latest passing receipt |
+| `hub review latest [task]` | Review the latest passing standard-task receipt |
+| `hub costs --days N` | Aggregate provider-reported tokens and cost |
+| `hub status` | Show repository, Pi, key, task, receipt, and activation state |
+
+Dynamic input:
+
+- is capped at 2,000 characters;
+- is scanned for likely credentials;
+- cannot change context files, tools, model, budgets, output contract, or approvals;
+- is stored only inside the immutable effective-manifest snapshot for audit;
+- produces an `ephemeral_manifest: true` receipt.
+
+The CLI removes runtime overlays after execution and ignores abandoned overlays in Git.

@@ -1,0 +1,88 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T14-30-23-634Z-review-cos-business-executive-brief",
+  "task_id": "review-cos-business-executive-brief",
+  "task_kind": "review",
+  "started_at": "2026-06-15T14:28:50.964Z",
+  "finished_at": "2026-06-15T14:30:23.634Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "contract": {
+    "manifest_sha256": "a6a0ad314177333aed6260d972ca04c9eae2464433ec16dbc1cee63182f6daeb",
+    "prompt_sha256": "28eef76ea6c27f7335fdd12fcfc474670b67f0e8740151424e44ab11e7951a87",
+    "ephemeral_manifest": true,
+    "manifest_path": "operations/runs/usage/2026/06/2026-06-15T14-30-23-634Z-review-cos-business-executive-brief.manifest.json"
+  },
+  "context": {
+    "files": [
+      "agents/roles/independent-reviewer.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md",
+      "operations/runs/usage/2026/06/2026-06-15T14-28-50-927Z-cos-business-executive-brief.json",
+      "operations/runs/usage/2026/06/2026-06-15T14-28-50-927Z-cos-business-executive-brief.md",
+      "operations/runs/usage/2026/06/2026-06-15T14-28-50-927Z-cos-business-executive-brief.manifest.json"
+    ],
+    "file_count": 8,
+    "total_bytes": 15483
+  },
+  "usage": {
+    "input": 24,
+    "output": 3506,
+    "cache_read": 7040,
+    "cache_write": 0,
+    "total_tokens": 10570,
+    "cost_usd": 0.00308618
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T14-30-23-634Z-review-cos-business-executive-brief.md",
+    "sha256": "9b64c7f7868a3e6019f680ba77bb812485c059a98c6c7e3285b62478a01b5078",
+    "word_count": 503
+  },
+  "validation": {
+    "status": "fail",
+    "checks": [
+      "output words: 503/750",
+      "output starts with: ## Verdict",
+      "required section: Verdict",
+      "required section: Material Findings",
+      "required section: Unsupported Claims",
+      "required section: Missing Evidence",
+      "required section: Priority and Scope Integrity",
+      "required section: Risk and Decision Quality",
+      "required section: Recommendation",
+      "required section: Human Decision Required",
+      "section pattern present (Verdict): \\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "section pattern present (Priority and Scope Integrity): Priority:",
+      "section pattern present (Priority and Scope Integrity): Scope:",
+      "section pattern present (Risk and Decision Quality): risk",
+      "section pattern present (Risk and Decision Quality): decision",
+      "section pattern present (Human Decision Required): Marco|human",
+      "forbidden pattern absent: \\bI approve\\b",
+      "forbidden pattern absent: \\bapproved for publication\\b",
+      "forbidden pattern absent: \\bno human review required\\b",
+      "forbidden pattern absent: ^Now I",
+      "forbidden pattern absent: ^Here is",
+      "required pattern present: \\b(?:PASS|PASS WITH CORRECTIONS|BLOCK)\\b",
+      "required pattern present: \\bhuman|Marco\\b",
+      "evidence language present",
+      "input tokens: 24/22000",
+      "output tokens: 3506/5000",
+      "total tokens: 10570/32000",
+      "cost USD: 0.00308618/0.25"
+    ],
+    "failures": [
+      "section pattern missing (Risk and Decision Quality): risk"
+    ]
+  },
+  "promotion": {
+    "eligible": false,
+    "human_review_required": true
+  },
+  "review": {
+    "source_receipt": "operations/runs/usage/2026/06/2026-06-15T14-28-50-927Z-cos-business-executive-brief.json",
+    "source_output": "operations/runs/usage/2026/06/2026-06-15T14-28-50-927Z-cos-business-executive-brief.md",
+    "source_output_sha256": "da0dbe07103504d28531caa211f8472622f03cd70f80820f88e8da38f0648d0f"
+  }
+}

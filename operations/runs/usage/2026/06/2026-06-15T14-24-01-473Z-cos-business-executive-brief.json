@@ -1,0 +1,75 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-15T14-24-01-473Z-cos-business-executive-brief",
+  "task_id": "cos-business-executive-brief",
+  "task_kind": "standard",
+  "started_at": "2026-06-15T14:23:31.403Z",
+  "finished_at": "2026-06-15T14:24:01.473Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "contract": {
+    "manifest_sha256": "ec9fcd0a9fd1254d021aa52e832899d9795532e6771d6812f738104f22c04268",
+    "prompt_sha256": "93eb5ed4f858f8286e6f0ed347bcd1ec9c7b30c43d5ed4281ca5c5ed680e5b08",
+    "ephemeral_manifest": true
+  },
+  "context": {
+    "files": [
+      "agents/roles/chief-of-staff-business.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "file_count": 5,
+    "total_bytes": 6483
+  },
+  "usage": {
+    "input": 121,
+    "output": 1275,
+    "cache_read": 4352,
+    "cache_write": 0,
+    "total_tokens": 5748,
+    "cost_usd": 0.0003861256
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-15T14-24-01-473Z-cos-business-executive-brief.md",
+    "sha256": "7d2b791d94356a3ea78dca06afd2f04d66a265edd485f0956576143a7d9c01a8",
+    "word_count": 323
+  },
+  "validation": {
+    "status": "fail",
+    "checks": [
+      "output words: 323/550",
+      "output starts with: ## Company Status",
+      "required section: Company Status",
+      "required section: What Moved",
+      "required section: Blocked or Unknown",
+      "required section: Top Three Priorities",
+      "required section: Decisions Required",
+      "required section: Evidence Quality",
+      "section pattern present (Top Three Priorities): launch-proof gaps",
+      "section pattern present (Top Three Priorities): decision-grade business evidence",
+      "section pattern present (Top Three Priorities): measured distribution",
+      "forbidden pattern absent: \\bSystems Hub(?: LLC)? is (?:currently )?a single[- ]product company\\b",
+      "forbidden pattern absent: \\bonly product company\\b",
+      "forbidden pattern absent: ^Here is",
+      "forbidden pattern absent: Trading Edge Refinement.{0,100}\\bplanning",
+      "forbidden pattern absent: \\blaunch is complete\\b",
+      "forbidden pattern absent: \\bprofitable trading\\b",
+      "required pattern present: (?:one|only) active (?:company )?product project",
+      "required pattern present: Trader's Hub",
+      "evidence language present",
+      "input tokens: 121/12000",
+      "output tokens: 1275/2000",
+      "total tokens: 5748/18000",
+      "cost USD: 0.0003861256/0.1"
+    ],
+    "failures": [
+      "required pattern missing: (?:one|only) active (?:company )?product project"
+    ]
+  },
+  "promotion": {
+    "eligible": false,
+    "human_review_required": true
+  }
+}

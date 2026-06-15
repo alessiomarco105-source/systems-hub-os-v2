@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { dirname, relative, resolve, sep } from "node:path";
+import { basename, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -227,12 +227,36 @@ async function validateReviewSource(manifest) {
   const output = await readFile(outputAbsolute);
   const actualHash = createHash("sha256").update(output).digest("hex");
   if (actualHash !== receipt.output.sha256) fail("review source output hash mismatch");
+  const artifacts = [
+    { path: receiptRelative, bytes: (await stat(receiptAbsolute)).size, dataClass: "internal" },
+    { path: outputRelative, bytes: output.length, dataClass: "internal" }
+  ];
+  if (receipt.contract?.manifest_path) {
+    const contractRelative = receipt.contract.manifest_path;
+    if (!safeRelativePath(contractRelative) ||
+        !contractRelative.startsWith("operations/runs/usage/") ||
+        !contractRelative.endsWith(".manifest.json")) {
+      fail("review source manifest snapshot path is invalid");
+    }
+    const contractAbsolute = resolve(repoRoot, contractRelative);
+    const contractBytes = await readFile(contractAbsolute);
+    const contractHash = createHash("sha256").update(contractBytes).digest("hex");
+    if (contractHash !== receipt.contract.manifest_sha256) {
+      fail("review source manifest snapshot hash mismatch");
+    }
+    const workerContract = JSON.parse(contractBytes.toString("utf8"));
+    if (workerContract.task_id !== receipt.task_id) {
+      fail("review source manifest task mismatch");
+    }
+    artifacts.push({
+      path: contractRelative,
+      bytes: contractBytes.length,
+      dataClass: "internal"
+    });
+  }
   return {
     receipt,
-    artifacts: [
-      { path: receiptRelative, bytes: (await stat(receiptAbsolute)).size, dataClass: "internal" },
-      { path: outputRelative, bytes: output.length, dataClass: "internal" }
-    ]
+    artifacts
   };
 }
 
@@ -434,7 +458,15 @@ function timestampId(date) {
 }
 
 async function writeArtifacts(
-  manifest, contextInfo, reviewSource, result, outputValidation, startedAt, finishedAt
+  manifest,
+  contractInfo,
+  manifestSnapshot,
+  contextInfo,
+  reviewSource,
+  result,
+  outputValidation,
+  startedAt,
+  finishedAt
 ) {
   const year = String(finishedAt.getUTCFullYear());
   const month = String(finishedAt.getUTCMonth() + 1).padStart(2, "0");
@@ -443,8 +475,10 @@ async function writeArtifacts(
   await mkdir(outputDir, { recursive: true });
 
   const outputPath = resolve(outputDir, `${runId}.md`);
+  const manifestSnapshotPath = resolve(outputDir, `${runId}.manifest.json`);
   const receiptPath = resolve(outputDir, `${runId}.json`);
   await writeFile(outputPath, `${result.text}\n`, { flag: "wx" });
+  await writeFile(manifestSnapshotPath, manifestSnapshot, { flag: "wx" });
   const outputHash = createHash("sha256").update(`${result.text}\n`).digest("hex");
   const usage = result.usage;
   const receipt = {
@@ -456,6 +490,10 @@ async function writeArtifacts(
     finished_at: finishedAt.toISOString(),
     provider: manifest.provider,
     model: manifest.model,
+    contract: {
+      ...contractInfo,
+      manifest_path: relative(repoRoot, manifestSnapshotPath).split(sep).join("/")
+    },
     context: {
       files: contextInfo.files.map(file => file.path),
       file_count: contextInfo.files.length,
@@ -508,7 +546,14 @@ async function main() {
   if (taskRelative.startsWith("..") || taskRelative.split(sep).includes("..")) {
     fail("manifest must live under operations/tasks");
   }
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  const manifestBytes = await readFile(manifestPath);
+  const manifest = JSON.parse(manifestBytes.toString("utf8"));
+  const manifestSnapshot = `${JSON.stringify(manifest, null, 2)}\n`;
+  const contractInfo = {
+    manifest_sha256: createHash("sha256").update(manifestSnapshot).digest("hex"),
+    prompt_sha256: createHash("sha256").update(manifest.prompt).digest("hex"),
+    ephemeral_manifest: basename(manifestPath).startsWith(".hub-runtime-")
+  };
   validateManifest(manifest);
   const reviewSource = await validateReviewSource(manifest);
   const contextInfo = await validateContext(manifest, reviewSource);
@@ -528,7 +573,15 @@ async function main() {
   const finishedAt = new Date();
   const outputValidation = validateOutput(manifest, result);
   const artifacts = await writeArtifacts(
-    manifest, contextInfo, reviewSource, result, outputValidation, startedAt, finishedAt
+    manifest,
+    contractInfo,
+    manifestSnapshot,
+    contextInfo,
+    reviewSource,
+    result,
+    outputValidation,
+    startedAt,
+    finishedAt
   );
 
   process.stdout.write(`${result.text}\n\n`);

@@ -36,6 +36,16 @@
         "total_bytes": { "type": "integer" }
       }
     },
+    "contract": {
+      "type": "object",
+      "required": ["manifest_path", "manifest_sha256", "prompt_sha256", "ephemeral_manifest"],
+      "properties": {
+        "manifest_path": { "type": "string" },
+        "manifest_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "prompt_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "ephemeral_manifest": { "type": "boolean" }
+      }
+    },
     "usage": {
       "type": "object",
       "required": ["input", "output", "cache_read", "cache_write", "total_tokens", "cost_usd"],

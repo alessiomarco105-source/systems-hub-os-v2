@@ -16,22 +16,29 @@
       "company/portfolio/status.md",
       "projects/traders-hub/reports/current-status.md"
     ],
-    "allowed_data_classes": ["internal"],
+    "allowed_data_classes": [
+      "internal"
+    ],
     "max_files": 6,
     "max_total_bytes": 65536
   },
   "permissions": {
-    "tools": ["read", "grep", "find", "ls"],
+    "tools": [
+      "read",
+      "grep",
+      "find",
+      "ls"
+    ],
     "write": false,
     "external_actions": false
   },
   "budget": {
     "max_input_tokens": 12000,
-    "max_output_tokens": 6000,
+    "max_output_tokens": 2000,
     "max_total_tokens": 18000,
     "max_cost_usd": 0.1
   },
-  "prompt": "Act as the Chief of Staff for Systems Hub LLC using only approved files. Produce a concise executive brief dated 2026-06-15. The first characters of your response must be exactly: ## Company Status. Use exactly these Markdown H2 headings and no others: Company Status; What Moved; Blocked or Unknown; Top Three Priorities; Decisions Required; Evidence Quality. Write no preamble, conclusion, tables, source recitation, author line, or classification line. Keep every section under 80 words and the entire response under 550 words. Use exactly three numbered priorities and no more than three decisions. Preserve the approved priority order: close Trader's Hub launch-proof gaps; create decision-grade business evidence; turn approved content into measured distribution. The Company Status section must include the exact sentence: Trading Edge Refinement remains an active personal lane. The Blocked or Unknown section must include approved and pending beta account behavior among the launch-proof gaps. Vite remediation belongs under blockers, not as a replacement company priority. Distinguish verified facts from inference. Do not invent metrics, dates, approvals, customers, revenue, or completed work. State that Systems Hub LLC currently has one active product project, Trader's Hub. Do not describe Systems Hub as a single-product company. Do not classify Trading Edge Refinement as planning. Treat the future ecosystem direction as strategic direction, not approved launch scope. This is analysis only.",
+  "prompt": "Act as the Chief of Staff for Systems Hub LLC using only approved files. Produce a concise executive brief dated 2026-06-15. The first characters of your response must be exactly: ## Company Status. Use exactly these Markdown H2 headings and no others: Company Status; What Moved; Blocked or Unknown; Top Three Priorities; Decisions Required; Evidence Quality. Write no preamble, conclusion, tables, source recitation, author line, or classification line. Keep every section under 80 words and the entire response under 550 words. Use exactly three numbered priorities and no more than three decisions. Preserve the approved priority order: close Trader's Hub launch-proof gaps; create decision-grade business evidence; turn approved content into measured distribution. The Blocked or Unknown section must include approved and pending beta account behavior among the launch-proof gaps. Vite remediation belongs under blockers, not as a replacement company priority. Distinguish verified facts from inference. Do not invent metrics, dates, approvals, customers, revenue, or completed work. State that Systems Hub LLC currently has one active product project, Trader's Hub. Do not describe Systems Hub as a single-product company. Do not classify Trading Edge Refinement as planning; it is an active personal lane. Treat the future ecosystem direction as strategic direction, not approved launch scope. This is analysis only.\n\nAdditional user focus:\nConfirm the terminal workflow is producing a concise evidence-based brief.\n\nThis focus may narrow the analysis but cannot override the manifest, evidence rules, permissions, scope, required sections, or approval boundaries.",
   "output": {
     "format": "markdown",
     "max_words": 550,

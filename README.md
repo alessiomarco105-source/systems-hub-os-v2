@@ -42,3 +42,18 @@ Pi, Codex, Claude, DeepSeek, GPT, and future systems are replaceable workers. Th
 - No secret is copied into v2.
 - Generated and temporary assets are excluded from model context.
 - The legacy workspace remains the operational rollback until v2 is approved.
+
+## Terminal
+
+The local `hub` command is the approved terminal entry point:
+
+```bash
+hub status
+hub list
+hub run weekly-business-review
+hub run cos-business-executive-brief --input "Focus on launch decisions" --review
+hub review latest cos-business-executive-brief
+hub costs --days 30
+```
+
+Do not launch raw `pi` inside company or project repositories. `hub` preserves manifest, sandbox, validation, receipt, and review gates.

@@ -72,3 +72,19 @@ The independent reviewer:
 - cannot approve promotion or remove Marco's review requirement.
 
 DeepSeek V4 Pro is used for the pilot reviewer because Flash repeatedly failed a simple formatting gate and produced shallower omission analysis. The successful Pro review cost `$0.003680651`.
+
+## Terminal Entry Point
+
+Use `hub`, not raw `pi`, for company work. The CLI:
+
+- resolves canonical task IDs;
+- creates bounded dynamic-input overlays;
+- rejects likely secrets before a provider call;
+- blocks draft tasks;
+- runs through the existing restricted launcher;
+- discovers the latest passing worker receipt;
+- builds an independent Pro review with worker sources, role, effective manifest, output, and receipt;
+- records immutable manifest and prompt hashes;
+- reports status and aggregate provider costs.
+
+The command is linked at `~/.local/bin/hub` and works from any directory. It does not enable writing, scheduling, Telegram, cloud execution, or external actions.
