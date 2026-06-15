@@ -1,7 +1,9 @@
 {
   "packages": [
-    "npm:pi-context-tools"
+    "npm:pi-context-tools",
+    "npm:my-pi-themes"
   ],
+  "theme": "onedark-pro",
   "compaction": {
     "keepRecentTokens": 1200
   }

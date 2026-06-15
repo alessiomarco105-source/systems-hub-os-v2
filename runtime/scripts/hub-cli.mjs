@@ -597,15 +597,84 @@ const ansi = {
   green: "\x1b[32m",
   yellow: "\x1b[33m",
   red: "\x1b[31m",
-  inverse: "\x1b[7m"
+  inverse: "\x1b[7m",
+  accent: "\x1b[36m",
+  accentBright: "\x1b[35m",
+  muted: "\x1b[2m",
+  text: "",
+  border: "\x1b[2m",
+  borderMuted: "\x1b[2m",
+  selectedBg: "\x1b[7m",
+  warm: "\x1b[33m",
+  screenBg: "",
+  cardBg: ""
 };
 
 function color(text, code) {
   return `${code}${text}${ansi.reset}`;
 }
 
+function hexToRgb(value) {
+  const match = /^#?([0-9a-f]{6})$/i.exec(String(value || ""));
+  if (!match) return undefined;
+  const hex = match[1];
+  return [
+    Number.parseInt(hex.slice(0, 2), 16),
+    Number.parseInt(hex.slice(2, 4), 16),
+    Number.parseInt(hex.slice(4, 6), 16)
+  ];
+}
+
+function fg(hex) {
+  const rgb = hexToRgb(hex);
+  return rgb ? `\x1b[38;2;${rgb[0]};${rgb[1]};${rgb[2]}m` : "";
+}
+
+function bg(hex) {
+  const rgb = hexToRgb(hex);
+  return rgb ? `\x1b[48;2;${rgb[0]};${rgb[1]};${rgb[2]}m` : "";
+}
+
+async function loadPiTheme() {
+  try {
+    const settings = await readJson(resolve(repoRoot, ".pi/settings.json"));
+    const themeName = settings.theme;
+    if (!themeName || !settings.packages?.includes("npm:my-pi-themes")) return undefined;
+    const themePath = resolve(repoRoot, ".pi/npm/node_modules/my-pi-themes/themes", `${themeName}.json`);
+    const theme = await readJson(themePath);
+    return theme?.vars ? theme : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function applyPiTheme(theme) {
+  const vars = theme?.vars;
+  if (!vars) return;
+  ansi.cyan = fg(vars.cyan);
+  ansi.green = fg(vars.green);
+  ansi.yellow = fg(vars.yellow);
+  ansi.red = fg(vars.red);
+  ansi.accent = fg(vars.accent);
+  ansi.accentBright = fg(vars.accentBright);
+  ansi.muted = fg(vars.muted);
+  ansi.text = fg(vars.text);
+  ansi.border = fg(vars.border);
+  ansi.borderMuted = fg(vars.borderMuted);
+  ansi.warm = fg(vars.warmMix || vars.orange);
+  ansi.screenBg = bg(vars.bg);
+  ansi.cardBg = bg(vars.bgCard);
+  ansi.selectedBg = `${bg(vars.bgSubtle)}${fg(vars.text)}`;
+}
+
 function clearScreen() {
   process.stdout.write("\x1b[2J\x1b[H");
+}
+
+function paintLine(line, width) {
+  const padded = fit(line, width);
+  const restored = padded.replaceAll(ansi.reset, `${ansi.reset}${ansi.screenBg}`);
+  return `${ansi.screenBg}${restored}${ansi.reset}`;
 }
 
 function hideCursor() {
@@ -617,7 +686,7 @@ function showCursor() {
 }
 
 function divider(width = 72) {
-  return color("─".repeat(width), ansi.dim);
+  return color("─".repeat(width), ansi.borderMuted || ansi.dim);
 }
 
 function visibleLength(text) {
@@ -639,9 +708,16 @@ function padAnsi(text, width) {
 function box(title, lines, width) {
   const inner = Math.max(8, width - 4);
   const topTitle = title ? ` ${title} ` : "";
-  const top = `╭${topTitle}${"─".repeat(Math.max(0, width - 2 - visibleLength(topTitle)))}╮`;
-  const body = lines.map(item => `│ ${fit(item, inner)} │`);
-  const bottom = `╰${"─".repeat(width - 2)}╯`;
+  const top =
+    color("╭", ansi.border) +
+    (topTitle ? color(topTitle, ansi.accent || ansi.bold) : "") +
+    color(`${"─".repeat(Math.max(0, width - 2 - visibleLength(topTitle)))}╮`, ansi.border);
+  const body = lines.map(item => {
+    const fitted = fit(item, inner);
+    const text = String(item).includes("\x1b[") ? fitted : color(fitted, ansi.text);
+    return `${ansi.cardBg}${color("│", ansi.borderMuted)} ${text} ${color("│", ansi.borderMuted)}${ansi.reset}`;
+  });
+  const bottom = color(`╰${"─".repeat(width - 2)}╯`, ansi.border);
   return [top, ...body, bottom];
 }
 
@@ -822,6 +898,7 @@ async function dashboardState() {
   const allReceipts = await receipts();
   const total = await tokenSummary(7);
   const last = allReceipts[0]?.receipt;
+  const theme = await loadPiTheme();
   let branch = "unknown";
   let commit = "unknown";
   let dirty = "unknown";
@@ -832,15 +909,25 @@ async function dashboardState() {
   } catch {
     // Dashboard only.
   }
-  return { tasks, receipts: allReceipts, total, last, branch, commit, dirty };
+  return { tasks, receipts: allReceipts, total, last, branch, commit, dirty, theme };
 }
 
 function renderLogo(width, state) {
-  const logoWidth = Math.min(width, 92);
+  const logoWidth = Math.min(width, 96);
   const status = `${state.branch}@${state.commit}  ${state.dirty === "yes" ? "dirty" : "clean"}`;
+  const wordmark = [
+    "  ____  __   __ ____ _____ _____ __  __ ____    _   _ _   _ ____  ",
+    " / ___| \\ \\ / // ___|_   _| ____|  \\/  / ___|  | | | | | | | __ ) ",
+    " \\___ \\  \\ V / \\___ \\ | | |  _| | |\\/| \\___ \\  | |_| | | | |  _ \\ ",
+    "  ___) |  | |   ___) || | | |___| |  | |___) | |  _  | |_| | |_) |",
+    " |____/   |_|  |____/ |_| |_____|_|  |_|____/  |_| |_|\\___/|____/ "
+  ];
+  const logoLines = logoWidth >= 76
+    ? wordmark.map(line => color(fit(line, logoWidth - 4), `${ansi.bold}${ansi.accentBright}`))
+    : [color(fit("SYSTEMS HUB", logoWidth - 4), `${ansi.bold}${ansi.accentBright}`)];
   return box("", [
-    color(fit("SYSTEMS HUB", logoWidth - 4), ansi.bold),
-    color(fit("company operating system", logoWidth - 4), ansi.dim),
+    ...logoLines,
+    color(fit("company operating system", logoWidth - 4), ansi.muted || ansi.dim),
     color(fit(status, logoWidth - 4), state.dirty === "yes" ? ansi.yellow : ansi.green)
   ], logoWidth);
 }
@@ -848,27 +935,27 @@ function renderLogo(width, state) {
 function renderSidebar(selectedIndex, height) {
   const width = 24;
   const lines = [
-    color("Systems Hub", ansi.bold),
-    color("AI OS", ansi.dim),
+    color("Systems Hub", `${ansi.bold}${ansi.accent}`),
+    color("AI OS", ansi.muted || ansi.dim),
     "",
     ...tuiItems.map((item, index) => {
       const label = `${String(index + 1).padStart(2)}  ${item.label}`;
       return index === selectedIndex
-        ? color(fit(` ${label}`, width - 1), ansi.inverse)
-        : ` ${fit(label, width - 2)}`;
+        ? color(fit(` ${label}`, width - 1), ansi.selectedBg || ansi.inverse)
+        : ` ${color(fit(label, width - 2), ansi.text)}`;
     }),
     "",
-    color("↑/↓ move", ansi.dim),
-    color("enter open", ansi.dim),
-    color("r refresh", ansi.dim),
-    color("q quit", ansi.dim)
+    color("↑/↓ move", ansi.muted || ansi.dim),
+    color("enter open", ansi.muted || ansi.dim),
+    color("r refresh", ansi.muted || ansi.dim),
+    color("q quit", ansi.muted || ansi.dim)
   ];
   while (lines.length < height) lines.push("");
   return lines.map(line => fit(line, width));
 }
 
 function renderDashboardView(state, width) {
-  const cardWidth = Math.max(32, Math.floor((width - 2) / 2));
+  const cardWidth = Math.max(26, Math.floor((width - 4) / 2));
   const left = box("Runtime", [
     `Git: ${state.branch}@${state.commit}`,
     `Dirty: ${state.dirty}`,
@@ -891,7 +978,7 @@ function renderDashboardView(state, width) {
     "",
     ...box("Last Run", [last], Math.min(width, cardWidth * 2 + 2)),
     "",
-    color("Use this screen to choose actions without remembering commands.", ansi.dim)
+    color("Use this screen to choose actions without remembering commands.", ansi.muted || ansi.dim)
   ];
 }
 
@@ -935,7 +1022,7 @@ async function renderOutputView(state, width) {
     "",
     ...preview,
     "",
-    color("Preview only. Open the output path for the full markdown file.", ansi.dim)
+    color("Preview only. Open the output path for the full markdown file.", ansi.muted || ansi.dim)
   ];
 }
 
@@ -979,24 +1066,24 @@ function renderNextActionView(state, width) {
   const failedShare = state.total.total ? state.total.failedTokens / state.total.total : 0;
   const actions = [];
   if (state.dirty === "yes") {
-    actions.push("Review and commit these TUI edits before another infrastructure layer.");
+    actions.push("Commit current TUI edits before new infra work.");
   }
   if (latest?.validation?.status === "fail") {
     actions.push(`Fix or rerun the latest failed task: ${latest.task_id}.`);
   }
   if (failedShare > 0.25) {
-    actions.push("Use local validation first; reserve reviews for decision-grade outputs.");
+    actions.push("Validate locally; review only final outputs.");
   }
   if (!actions.length) {
-    actions.push("Inspect locally, then run one governed task for a clear business question.");
+    actions.push("Inspect locally, then run one governed task.");
   }
-  actions.push("Keep Trader's Hub as a project; company governance stays above projects.");
-  actions.push("For payments, signups, or launch calls, use a reviewed brief.");
+  actions.push("Keep company governance above project work.");
+  actions.push("Use reviewed briefs for launch/payment calls.");
 
   return [
     ...box("Recommended Next Action", actions.map((item, index) => `${index + 1}. ${item}`), Math.min(width, 96)),
     "",
-    color("This view is deterministic and local. It does not call a model.", ansi.dim)
+    color("This view is deterministic and local. It does not call a model.", ansi.muted || ansi.dim)
   ];
 }
 
@@ -1044,7 +1131,7 @@ function renderTokenView(state, width) {
       `Failed cost: ${formatMoney(state.total.failedCost)}`
     ], Math.min(width, 70)),
     "",
-    color("For full detail run: hub tokens --days 7 --limit 10", ansi.dim)
+    color("For full detail run: hub tokens --days 7 --limit 10", ansi.muted || ansi.dim)
   ];
   return lines;
 }
@@ -1057,7 +1144,7 @@ function renderActionView(itemKey) {
       "Press Enter to select a task, add optional focus, and choose review.",
       "This can call DeepSeek and spend tokens.",
       "",
-      color("Safety: task manifests, read-only tools, validation, and receipts still apply.", ansi.dim)
+      color("Safety: task manifests, read-only tools, validation, and receipts still apply.", ansi.muted || ansi.dim)
     ];
   }
   if (itemKey === "review") {
@@ -1081,6 +1168,7 @@ function renderActionView(itemKey) {
 
 async function renderTui(selectedIndex) {
   const state = await dashboardState();
+  applyPiTheme(state.theme);
   const width = Math.max(88, process.stdout.columns || 100);
   const height = Math.max(24, process.stdout.rows || 30);
   const sideWidth = 26;
@@ -1096,16 +1184,22 @@ async function renderTui(selectedIndex) {
   else if (selected.key === "tokens") content = renderTokenView(state, contentWidth);
   else content = renderActionView(selected.key);
 
-  const header = `${color("SYSTEMS HUB", ansi.bold)} ${color("local harness", ansi.dim)}   ${color(`${state.branch}@${state.commit}`, ansi.dim)}   ${state.dirty === "yes" ? color("dirty", ansi.yellow) : color("clean", ansi.green)}`;
+  const themeLabel = state.theme?.name ? `theme=${state.theme.name}` : "theme=default";
+  const header =
+    `${color("SYSTEMS HUB", `${ansi.bold}${ansi.accentBright}`)} ` +
+    `${color("local harness", ansi.muted || ansi.dim)}   ` +
+    `${color(`${state.branch}@${state.commit}`, ansi.muted || ansi.dim)}   ` +
+    `${state.dirty === "yes" ? color("dirty", ansi.yellow) : color("clean", ansi.green)}   ` +
+    `${color(themeLabel, ansi.muted || ansi.dim)}`;
   const logo = renderLogo(Math.min(width, 120), state);
   const body = columns(renderSidebar(selectedIndex, height - 4), content, 3);
   clearScreen();
-  console.log(header);
-  for (const line of logo) console.log(line);
-  console.log(divider(Math.min(width, 120)));
-  for (const line of body.slice(0, height - logo.length - 5)) console.log(line);
-  console.log(divider(Math.min(width, 120)));
-  console.log(color("No external action happens from dashboard views. Run/Review require explicit Enter.", ansi.dim));
+  console.log(paintLine(header, width));
+  for (const line of logo) console.log(paintLine(line, width));
+  console.log(paintLine(divider(Math.min(width, 120)), width));
+  for (const line of body.slice(0, height - logo.length - 5)) console.log(paintLine(line, width));
+  console.log(paintLine(divider(Math.min(width, 120)), width));
+  console.log(paintLine(color("No external action happens from dashboard views. Run/Review require explicit Enter.", ansi.muted || ansi.dim), width));
 }
 
 function readTuiKey() {
