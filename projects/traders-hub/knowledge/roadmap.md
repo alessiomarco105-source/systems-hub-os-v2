@@ -10,6 +10,7 @@ sources:
   - legacy:wiki/traders-hub/deferred-features.md
   - legacy:wiki/traders-hub/future-vision.md
   - legacy:wiki/traders-hub/launch-blockers.md
+  - marco:2026-06-15-ecosystem-direction
 ---
 
 # Trader's Hub Roadmap
@@ -30,6 +31,19 @@ sources:
 | Direct broker integrations | Recurring revenue, affordable API access, or partnership |
 | In-platform backtesting engine | Paying demand supports data and compute cost |
 | Verified strategy marketplace | Post-launch revenue plus legal/compliance review |
+
+## Future Ecosystem Direction
+
+Trader's Hub may become the product center of a wider trading education and tooling ecosystem:
+
+- mentorship and trading education led by Marco;
+- a Discord community where members use Trader's Hub as the operating workflow;
+- access or redemption for indicators created by Marco;
+- future indicators, education, and community benefits connected through a coherent offer.
+
+This is a strategic direction, not approved launch scope. It requires separate validation of demand, pricing, support capacity, platform terms, indicator licensing, community moderation, and regulatory or marketing boundaries before activation.
+
+Systems Hub LLC is therefore not defined as a single-product company. Trader's Hub is its only active product project as of 2026-06-15 and may become infrastructure for additional company offers.
 
 ## Product Anti-Patterns
 
