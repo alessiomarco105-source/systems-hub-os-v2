@@ -806,9 +806,12 @@ async function tuiRecentReceipts(rl) {
 
 const tuiItems = [
   { key: "dashboard", label: "Dashboard" },
+  { key: "next", label: "Next Action" },
   { key: "run", label: "Run Task" },
   { key: "review", label: "Review Latest" },
   { key: "tokens", label: "Token Audit" },
+  { key: "output", label: "Output Viewer" },
+  { key: "receipt", label: "Receipt Detail" },
   { key: "receipts", label: "Receipts" },
   { key: "tasks", label: "Tasks" },
   { key: "validate", label: "Validate" }
@@ -830,6 +833,16 @@ async function dashboardState() {
     // Dashboard only.
   }
   return { tasks, receipts: allReceipts, total, last, branch, commit, dirty };
+}
+
+function renderLogo(width, state) {
+  const logoWidth = Math.min(width, 92);
+  const status = `${state.branch}@${state.commit}  ${state.dirty === "yes" ? "dirty" : "clean"}`;
+  return box("", [
+    color(fit("SYSTEMS HUB", logoWidth - 4), ansi.bold),
+    color(fit("company operating system", logoWidth - 4), ansi.dim),
+    color(fit(status, logoWidth - 4), state.dirty === "yes" ? ansi.yellow : ansi.green)
+  ], logoWidth);
 }
 
 function renderSidebar(selectedIndex, height) {
@@ -879,6 +892,111 @@ function renderDashboardView(state, width) {
     ...box("Last Run", [last], Math.min(width, cardWidth * 2 + 2)),
     "",
     color("Use this screen to choose actions without remembering commands.", ansi.dim)
+  ];
+}
+
+function latestReceipt(state) {
+  return state.receipts[0];
+}
+
+function receiptOutputPath(receipt) {
+  const outputPath = receipt?.output?.path;
+  if (!outputPath) return undefined;
+  return resolve(repoRoot, outputPath);
+}
+
+async function renderOutputView(state, width) {
+  const latest = latestReceipt(state);
+  if (!latest) {
+    return [
+      ...box("Run Output Viewer", ["No receipts found yet."], Math.min(width, 76))
+    ];
+  }
+  const outputPath = receiptOutputPath(latest.receipt);
+  const relativePath = outputPath ? relative(repoRoot, outputPath) : "none";
+  let content = "No output file recorded on this receipt.";
+  if (outputPath) {
+    try {
+      content = await readFile(outputPath, "utf8");
+    } catch (error) {
+      content = `Could not read output file: ${error.message}`;
+    }
+  }
+  const preview = content
+    .split(/\r?\n/)
+    .slice(0, 18)
+    .map(line => fit(line || " ", Math.max(20, width - 4)));
+  return [
+    ...box("Run Output Viewer", [
+      `Task: ${latest.receipt.task_id}`,
+      `Finished: ${formatDate(latest.receipt.finished_at)}`,
+      `File: ${relativePath}`
+    ], Math.min(width, 92)),
+    "",
+    ...preview,
+    "",
+    color("Preview only. Open the output path for the full markdown file.", ansi.dim)
+  ];
+}
+
+function renderReceiptDetailView(state, width) {
+  const latest = latestReceipt(state);
+  if (!latest) {
+    return [
+      ...box("Open Receipt", ["No receipts found yet."], Math.min(width, 76))
+    ];
+  }
+  const receipt = latest.receipt;
+  const usage = usageNumbers(receipt);
+  const failures = receipt.validation?.failures || [];
+  const checks = receipt.validation?.checks || [];
+  const receiptPath = relative(repoRoot, latest.path);
+  const outputPath = receipt.output?.path || "none";
+  return [
+    ...box("Open Receipt", [
+      `Receipt: ${receiptPath}`,
+      `Task: ${receipt.task_id}`,
+      `Kind: ${receipt.task_kind || "standard"}`,
+      `Status: ${receipt.validation?.status || "unknown"}`,
+      `Model: ${receipt.model || "unknown"}`,
+      `Tokens: ${usage.total.toLocaleString("en-US")}  Cost: ${formatMoney(usage.cost)}`,
+      `Output: ${outputPath}`,
+      `Promotion eligible: ${String(receipt.promotion?.eligible ?? "unknown")}`
+    ], Math.min(width, 96)),
+    "",
+    color("Validation", ansi.bold),
+    ...(failures.length
+      ? failures.slice(0, 8).map(item => color(`- ${fit(item, width - 2)}`, ansi.red))
+      : [color("- no validation failures recorded", ansi.green)]),
+    "",
+    color("Recent Checks", ansi.bold),
+    ...checks.slice(0, 8).map(item => `- ${fit(item, width - 2)}`)
+  ];
+}
+
+function renderNextActionView(state, width) {
+  const latest = latestReceipt(state)?.receipt;
+  const failedShare = state.total.total ? state.total.failedTokens / state.total.total : 0;
+  const actions = [];
+  if (state.dirty === "yes") {
+    actions.push("Review and commit these TUI edits before another infrastructure layer.");
+  }
+  if (latest?.validation?.status === "fail") {
+    actions.push(`Fix or rerun the latest failed task: ${latest.task_id}.`);
+  }
+  if (failedShare > 0.25) {
+    actions.push("Use local validation first; reserve reviews for decision-grade outputs.");
+  }
+  if (!actions.length) {
+    actions.push("Inspect locally, then run one governed task for a clear business question.");
+  }
+  actions.push("Keep Trader's Hub as a project; company governance stays above projects.");
+  actions.push("For payments, signups, or launch calls, use a reviewed brief.");
+
+  return [
+    ...box("Recommended Next Action", actions.map((item, index) => `${index + 1}. ${item}`), Math.min(width, 96)),
+    "",
+    color("This view is deterministic and local. It does not call a model.", ansi.dim)
   ];
 }
 
@@ -970,17 +1088,22 @@ async function renderTui(selectedIndex) {
   const selected = tuiItems[selectedIndex];
   let content;
   if (selected.key === "dashboard") content = renderDashboardView(state, contentWidth);
+  else if (selected.key === "next") content = renderNextActionView(state, contentWidth);
   else if (selected.key === "tasks") content = renderTasksView(state, contentWidth);
   else if (selected.key === "receipts") content = renderReceiptsView(state, contentWidth);
+  else if (selected.key === "output") content = await renderOutputView(state, contentWidth);
+  else if (selected.key === "receipt") content = renderReceiptDetailView(state, contentWidth);
   else if (selected.key === "tokens") content = renderTokenView(state, contentWidth);
   else content = renderActionView(selected.key);
 
-  const header = `${color("Systems Hub", ansi.bold)} ${color("local harness", ansi.dim)}   ${color(`main@${state.commit}`, ansi.dim)}   ${state.dirty === "yes" ? color("dirty", ansi.yellow) : color("clean", ansi.green)}`;
+  const header = `${color("SYSTEMS HUB", ansi.bold)} ${color("local harness", ansi.dim)}   ${color(`${state.branch}@${state.commit}`, ansi.dim)}   ${state.dirty === "yes" ? color("dirty", ansi.yellow) : color("clean", ansi.green)}`;
+  const logo = renderLogo(Math.min(width, 120), state);
   const body = columns(renderSidebar(selectedIndex, height - 4), content, 3);
   clearScreen();
   console.log(header);
+  for (const line of logo) console.log(line);
   console.log(divider(Math.min(width, 120)));
-  for (const line of body.slice(0, height - 5)) console.log(line);
+  for (const line of body.slice(0, height - logo.length - 5)) console.log(line);
   console.log(divider(Math.min(width, 120)));
   console.log(color("No external action happens from dashboard views. Run/Review require explicit Enter.", ansi.dim));
 }
@@ -1017,8 +1140,13 @@ async function commandTui(args) {
         selectedIndex = (selectedIndex + 1) % tuiItems.length;
         continue;
       }
-      if (/^[1-7]$/.test(key.name || "")) {
-        selectedIndex = Number(key.name) - 1;
+      const numericKey = Number(key.name || key.sequence);
+      if (Number.isInteger(numericKey) && numericKey >= 1 && numericKey <= Math.min(9, tuiItems.length)) {
+        selectedIndex = numericKey - 1;
+        continue;
+      }
+      if ((key.name || key.sequence) === "0" && tuiItems.length >= 10) {
+        selectedIndex = 9;
         continue;
       }
       if (key.name === "r") continue;
@@ -1054,6 +1182,7 @@ async function commandTui(args) {
     if (process.stdin.isTTY) process.stdin.setRawMode(false);
     showCursor();
     clearScreen();
+    process.stdin.pause();
   }
 }
 

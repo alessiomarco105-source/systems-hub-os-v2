@@ -83,7 +83,7 @@ Dynamic input:
 
 The CLI removes runtime overlays after execution and ignores abandoned overlays in Git.
 
-The TUI is a convenience layer over the same commands. It does not add write, publish, schedule, deploy, or external-action powers. Use arrow keys or `j`/`k` to move, number keys to jump, Enter to open an action, `r` to refresh, and `q` to quit.
+The TUI is a convenience layer over the same commands. It does not add write, publish, schedule, deploy, or external-action powers. Dashboard, next-action, output, receipt, task, and token views are local inspection screens. `Run Task` and `Review Latest` are the only TUI entries that can call a model, and they still use the restricted runtime. Use arrow keys or `j`/`k` to move, number keys to jump (`0` selects item 10), Enter to open an action, `r` to refresh, and `q` to quit.
 
 Token discipline:
 

@@ -62,4 +62,4 @@ Do not launch raw `pi` inside company or project repositories. `hub` preserves m
 
 Use raw `pi` only for manual, explicitly bounded exploration. Project-local `pi-context-tools` is installed for manual sessions so an agent can inspect context usage and compact long sessions, but `hub` intentionally disables Pi extensions during governed task runs.
 
-`hub tui` opens the zero-dependency terminal interface for running tasks, reviewing latest outputs, checking token usage, viewing receipts, and validating manifests without memorizing every command. Use arrow keys or `j`/`k` to move, number keys to jump, Enter to open an action, `r` to refresh, and `q` to quit.
+`hub tui` opens the zero-dependency terminal interface for running tasks, reviewing latest outputs, checking token usage, opening run outputs and receipts, seeing the recommended next action, and validating manifests without memorizing every command. Use arrow keys or `j`/`k` to move, number keys to jump (`0` selects item 10), Enter to open an action, `r` to refresh, and `q` to quit.
