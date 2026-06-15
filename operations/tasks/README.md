@@ -83,7 +83,7 @@ Dynamic input:
 
 The CLI removes runtime overlays after execution and ignores abandoned overlays in Git.
 
-The TUI is a convenience layer over the same commands. It does not add write, publish, schedule, deploy, or external-action powers.
+The TUI is a convenience layer over the same commands. It does not add write, publish, schedule, deploy, or external-action powers. Use arrow keys or `j`/`k` to move, number keys to jump, Enter to open an action, `r` to refresh, and `q` to quit.
 
 Token discipline:
 

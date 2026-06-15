@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { execFileSync, spawn } from "node:child_process";
+import { emitKeypressEvents } from "node:readline";
 import { createInterface } from "node:readline/promises";
 import {
   readFile,
@@ -595,7 +596,8 @@ const ansi = {
   cyan: "\x1b[36m",
   green: "\x1b[32m",
   yellow: "\x1b[33m",
-  red: "\x1b[31m"
+  red: "\x1b[31m",
+  inverse: "\x1b[7m"
 };
 
 function color(text, code) {
@@ -606,8 +608,51 @@ function clearScreen() {
   process.stdout.write("\x1b[2J\x1b[H");
 }
 
+function hideCursor() {
+  process.stdout.write("\x1b[?25l");
+}
+
+function showCursor() {
+  process.stdout.write("\x1b[?25h");
+}
+
 function divider(width = 72) {
   return color("─".repeat(width), ansi.dim);
+}
+
+function visibleLength(text) {
+  return String(text).replace(/\x1b\[[0-9;]*m/g, "").length;
+}
+
+function fit(text, width) {
+  const value = String(text);
+  const plain = value.replace(/\x1b\[[0-9;]*m/g, "");
+  if (plain.length <= width) return value + " ".repeat(width - plain.length);
+  return `${plain.slice(0, Math.max(0, width - 1))}…`;
+}
+
+function padAnsi(text, width) {
+  const length = visibleLength(text);
+  return length >= width ? text : `${text}${" ".repeat(width - length)}`;
+}
+
+function box(title, lines, width) {
+  const inner = Math.max(8, width - 4);
+  const topTitle = title ? ` ${title} ` : "";
+  const top = `╭${topTitle}${"─".repeat(Math.max(0, width - 2 - visibleLength(topTitle)))}╮`;
+  const body = lines.map(item => `│ ${fit(item, inner)} │`);
+  const bottom = `╰${"─".repeat(width - 2)}╯`;
+  return [top, ...body, bottom];
+}
+
+function columns(leftLines, rightLines, gap = 2) {
+  const leftWidth = Math.max(...leftLines.map(visibleLength), 0);
+  const height = Math.max(leftLines.length, rightLines.length);
+  const result = [];
+  for (let index = 0; index < height; index += 1) {
+    result.push(`${padAnsi(leftLines[index] || "", leftWidth)}${" ".repeat(gap)}${rightLines[index] || ""}`);
+  }
+  return result;
 }
 
 function statusColor(status) {
@@ -759,57 +804,256 @@ async function tuiRecentReceipts(rl) {
   await tuiPause(rl);
 }
 
+const tuiItems = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "run", label: "Run Task" },
+  { key: "review", label: "Review Latest" },
+  { key: "tokens", label: "Token Audit" },
+  { key: "receipts", label: "Receipts" },
+  { key: "tasks", label: "Tasks" },
+  { key: "validate", label: "Validate" }
+];
+
+async function dashboardState() {
+  const tasks = await taskManifests();
+  const allReceipts = await receipts();
+  const total = await tokenSummary(7);
+  const last = allReceipts[0]?.receipt;
+  let branch = "unknown";
+  let commit = "unknown";
+  let dirty = "unknown";
+  try {
+    branch = execFileSync("git", ["branch", "--show-current"], { cwd: repoRoot, encoding: "utf8" }).trim();
+    commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
+    dirty = execFileSync("git", ["status", "--short"], { cwd: repoRoot, encoding: "utf8" }).trim() ? "yes" : "no";
+  } catch {
+    // Dashboard only.
+  }
+  return { tasks, receipts: allReceipts, total, last, branch, commit, dirty };
+}
+
+function renderSidebar(selectedIndex, height) {
+  const width = 24;
+  const lines = [
+    color("Systems Hub", ansi.bold),
+    color("AI OS", ansi.dim),
+    "",
+    ...tuiItems.map((item, index) => {
+      const label = `${String(index + 1).padStart(2)}  ${item.label}`;
+      return index === selectedIndex
+        ? color(fit(` ${label}`, width - 1), ansi.inverse)
+        : ` ${fit(label, width - 2)}`;
+    }),
+    "",
+    color("↑/↓ move", ansi.dim),
+    color("enter open", ansi.dim),
+    color("r refresh", ansi.dim),
+    color("q quit", ansi.dim)
+  ];
+  while (lines.length < height) lines.push("");
+  return lines.map(line => fit(line, width));
+}
+
+function renderDashboardView(state, width) {
+  const cardWidth = Math.max(32, Math.floor((width - 2) / 2));
+  const left = box("Runtime", [
+    `Git: ${state.branch}@${state.commit}`,
+    `Dirty: ${state.dirty}`,
+    `Tasks: ${state.tasks.length}`,
+    `Receipts: ${state.receipts.length}`,
+    "Write mode: disabled"
+  ], cardWidth);
+  const right = box("Token 7d", [
+    `Tokens: ${state.total.total.toLocaleString("en-US")}`,
+    `Cost: ${formatMoney(state.total.cost)}`,
+    `Failed: ${pct(state.total.failedTokens, state.total.total)}`,
+    `Pass/Fail: ${state.total.pass}/${state.total.fail}`,
+    "Reviews only when needed"
+  ], cardWidth);
+  const last = state.last
+    ? `${formatDate(state.last.finished_at)} ${state.last.task_id} ${state.last.validation?.status || "unknown"}`
+    : "none";
+  return [
+    ...columns(left, right),
+    "",
+    ...box("Last Run", [last], Math.min(width, cardWidth * 2 + 2)),
+    "",
+    color("Use this screen to choose actions without remembering commands.", ansi.dim)
+  ];
+}
+
+function renderTasksView(state, width) {
+  const lines = [
+    "TASK                              KIND      STATE    MODEL",
+    divider(Math.min(width, 72))
+  ];
+  for (const { manifest } of state.tasks) {
+    const stateText = manifest.execution_status === "manual"
+      ? color(manifest.execution_status.padEnd(8), ansi.green)
+      : color(manifest.execution_status.padEnd(8), ansi.yellow);
+    lines.push(
+      `${fit(manifest.task_id, 33)} ${manifest.task_kind.padEnd(9)} ${stateText} ${manifest.model}`
+    );
+  }
+  return lines;
+}
+
+function renderReceiptsView(state, width) {
+  const lines = [
+    "STATUS  FINISHED              TASK                              TOKENS  COST",
+    divider(Math.min(width, 86))
+  ];
+  for (const { receipt } of state.receipts.slice(0, 12)) {
+    const usage = usageNumbers(receipt);
+    const status = receipt.validation?.status || "unknown";
+    lines.push(
+      `${color(status.padEnd(6), statusColor(status))} ` +
+      `${formatDate(receipt.finished_at).slice(0, 19).padEnd(21)} ` +
+      `${fit(receipt.task_id, 33)} ` +
+      `${String(usage.total).padStart(6)}  ${formatMoney(usage.cost)}`
+    );
+  }
+  return lines;
+}
+
+function renderTokenView(state, width) {
+  const lines = [
+    ...box("Token Audit", [
+      `Runs: ${state.total.runs}  pass=${state.total.pass}  fail=${state.total.fail}`,
+      `Tokens: ${state.total.total.toLocaleString("en-US")}`,
+      `Cost: ${formatMoney(state.total.cost)}`,
+      `Failed tokens: ${state.total.failedTokens.toLocaleString("en-US")} (${pct(state.total.failedTokens, state.total.total)})`,
+      `Failed cost: ${formatMoney(state.total.failedCost)}`
+    ], Math.min(width, 70)),
+    "",
+    color("For full detail run: hub tokens --days 7 --limit 10", ansi.dim)
+  ];
+  return lines;
+}
+
+function renderActionView(itemKey) {
+  if (itemKey === "run") {
+    return [
+      color("Run Task", ansi.bold),
+      divider(),
+      "Press Enter to select a task, add optional focus, and choose review.",
+      "This can call DeepSeek and spend tokens.",
+      "",
+      color("Safety: task manifests, read-only tools, validation, and receipts still apply.", ansi.dim)
+    ];
+  }
+  if (itemKey === "review") {
+    return [
+      color("Review Latest", ansi.bold),
+      divider(),
+      "Press Enter to review the latest passing worker output for a task.",
+      "This uses DeepSeek Pro and should be reserved for decision-grade outputs."
+    ];
+  }
+  if (itemKey === "validate") {
+    return [
+      color("Validate", ansi.bold),
+      divider(),
+      "Press Enter to validate all task manifests locally.",
+      "No API call. No token cost."
+    ];
+  }
+  return [];
+}
+
+async function renderTui(selectedIndex) {
+  const state = await dashboardState();
+  const width = Math.max(88, process.stdout.columns || 100);
+  const height = Math.max(24, process.stdout.rows || 30);
+  const sideWidth = 26;
+  const contentWidth = width - sideWidth - 3;
+  const selected = tuiItems[selectedIndex];
+  let content;
+  if (selected.key === "dashboard") content = renderDashboardView(state, contentWidth);
+  else if (selected.key === "tasks") content = renderTasksView(state, contentWidth);
+  else if (selected.key === "receipts") content = renderReceiptsView(state, contentWidth);
+  else if (selected.key === "tokens") content = renderTokenView(state, contentWidth);
+  else content = renderActionView(selected.key);
+
+  const header = `${color("Systems Hub", ansi.bold)} ${color("local harness", ansi.dim)}   ${color(`main@${state.commit}`, ansi.dim)}   ${state.dirty === "yes" ? color("dirty", ansi.yellow) : color("clean", ansi.green)}`;
+  const body = columns(renderSidebar(selectedIndex, height - 4), content, 3);
+  clearScreen();
+  console.log(header);
+  console.log(divider(Math.min(width, 120)));
+  for (const line of body.slice(0, height - 5)) console.log(line);
+  console.log(divider(Math.min(width, 120)));
+  console.log(color("No external action happens from dashboard views. Run/Review require explicit Enter.", ansi.dim));
+}
+
+function readTuiKey() {
+  return new Promise(resolvePromise => {
+    const onKey = (_str, key) => {
+      process.stdin.off("keypress", onKey);
+      resolvePromise(key);
+    };
+    process.stdin.on("keypress", onKey);
+  });
+}
+
 async function commandTui(args) {
   if (args.length) fail("usage: hub tui");
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     fail("hub tui requires an interactive terminal");
   }
-
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  emitKeypressEvents(process.stdin);
+  if (process.stdin.isTTY) process.stdin.setRawMode(true);
+  hideCursor();
+  let selectedIndex = 0;
   try {
     while (true) {
-      clearScreen();
-      await tuiDashboard();
-      console.log(divider());
-      console.log("1. Run task");
-      console.log("2. Review latest output");
-      console.log("3. Token audit");
-      console.log("4. Recent receipts");
-      console.log("5. Validate manifests");
-      console.log("6. List tasks");
-      console.log("q. Quit");
-      const choice = await tuiPrompt(rl, "\nSelect: ");
-      clearScreen();
-      if (/^q(uit)?$/i.test(choice)) break;
+      await renderTui(selectedIndex);
+      const key = await readTuiKey();
+      if (key.name === "q" || (key.ctrl && key.name === "c")) break;
+      if (key.name === "up" || key.name === "k") {
+        selectedIndex = (selectedIndex - 1 + tuiItems.length) % tuiItems.length;
+        continue;
+      }
+      if (key.name === "down" || key.name === "j") {
+        selectedIndex = (selectedIndex + 1) % tuiItems.length;
+        continue;
+      }
+      if (/^[1-7]$/.test(key.name || "")) {
+        selectedIndex = Number(key.name) - 1;
+        continue;
+      }
+      if (key.name === "r") continue;
+      if (!["return", "enter"].includes(key.name)) continue;
 
+      const selected = tuiItems[selectedIndex];
+      if (!["run", "review", "validate"].includes(selected.key)) continue;
+      if (process.stdin.isTTY) process.stdin.setRawMode(false);
+      showCursor();
+      clearScreen();
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
       try {
-        if (choice === "1") {
+        if (selected.key === "run") {
           await tuiRunTask(rl);
           await tuiPause(rl);
-        } else if (choice === "2") {
+        } else if (selected.key === "review") {
           await tuiReviewLatest(rl);
           await tuiPause(rl);
-        } else if (choice === "3") {
-          await tuiTokenAudit(rl);
-          await tuiPause(rl);
-        } else if (choice === "4") {
-          await tuiRecentReceipts(rl);
-        } else if (choice === "5") {
+        } else if (selected.key === "validate") {
           await commandValidate([]);
-          await tuiPause(rl);
-        } else if (choice === "6") {
-          await tuiShowTasks(rl);
-        } else {
-          console.log(color("Unknown choice.", ansi.red));
           await tuiPause(rl);
         }
       } catch (error) {
         console.log(color(`Error: ${error.message}`, ansi.red));
         await tuiPause(rl);
+      } finally {
+        rl.close();
+        if (process.stdin.isTTY) process.stdin.setRawMode(true);
+        hideCursor();
       }
     }
   } finally {
-    rl.close();
+    if (process.stdin.isTTY) process.stdin.setRawMode(false);
+    showCursor();
+    clearScreen();
   }
 }
 
