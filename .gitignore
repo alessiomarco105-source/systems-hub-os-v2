@@ -17,3 +17,4 @@ operations/tasks/.hub-runtime-*.json
 operations/approvals/telegram/*.json
 operations/finance/drafts/telegram/*.json
 operations/finance/ledger/**/*.jsonl
+operations/finance/exports/*.csv

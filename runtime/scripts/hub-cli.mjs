@@ -57,6 +57,10 @@ Usage:
   hub finance drafts
   hub finance draft <draft-id>
   hub finance promote <draft-id> --approved
+  hub finance confirm <draft-id> [--send]
+  hub finance month YYYY-MM
+  hub finance totals --month YYYY-MM
+  hub finance export --month YYYY-MM --format csv
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -1190,13 +1194,231 @@ async function commandFinance(args) {
     await commandFinancePromote(positional[0]);
     return;
   }
-  fail("usage: hub finance drafts | hub finance draft <draft-id> | hub finance promote <draft-id> --approved");
+  if (command === "confirm") {
+    const { options, positional } = parseFlags(rest, new Set(["send"]), new Set(["send"]));
+    if (positional.length !== 1) fail("usage: hub finance confirm <draft-id> [--send]");
+    await commandFinanceConfirm(positional[0], options);
+    return;
+  }
+  if (command === "month") {
+    if (rest.length !== 1) fail("usage: hub finance month YYYY-MM");
+    await commandFinanceMonth(rest[0]);
+    return;
+  }
+  if (command === "totals") {
+    const { options, positional } = parseFlags(rest, new Set(["month"]));
+    if (positional.length || !options.month) fail("usage: hub finance totals --month YYYY-MM");
+    await commandFinanceTotals(options.month);
+    return;
+  }
+  if (command === "export") {
+    const { options, positional } = parseFlags(rest, new Set(["month", "format"]));
+    if (positional.length || !options.month || options.format !== "csv") {
+      fail("usage: hub finance export --month YYYY-MM --format csv");
+    }
+    await commandFinanceExport(options.month);
+    return;
+  }
+  fail("usage: hub finance drafts | hub finance draft <draft-id> | hub finance promote <draft-id> --approved | hub finance confirm <draft-id> [--send] | hub finance month YYYY-MM | hub finance totals --month YYYY-MM | hub finance export --month YYYY-MM --format csv");
 }
 
 function currentLedgerPath(date = new Date()) {
   const year = String(date.getUTCFullYear());
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   return resolve(financeLedgerDir, year, `${month}.jsonl`);
+}
+
+function ledgerPathForMonth(month) {
+  const match = /^([0-9]{4})-([0-9]{2})$/.exec(String(month || ""));
+  if (!match) fail("month must use YYYY-MM");
+  const monthNumber = Number(match[2]);
+  if (monthNumber < 1 || monthNumber > 12) fail("month must use YYYY-MM with month 01-12");
+  return resolve(financeLedgerDir, match[1], `${match[2]}.jsonl`);
+}
+
+async function readLedgerEntries(month) {
+  const ledgerPath = ledgerPathForMonth(month);
+  let text = "";
+  try {
+    text = await readFile(ledgerPath, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return { ledgerPath, entries: [] };
+    throw error;
+  }
+  const entries = [];
+  for (const [index, line] of text.split(/\r?\n/).entries()) {
+    if (!line.trim()) continue;
+    try {
+      entries.push(JSON.parse(line));
+    } catch {
+      fail(`invalid ledger JSON on line ${index + 1}: ${relative(repoRoot, ledgerPath)}`);
+    }
+  }
+  return { ledgerPath, entries };
+}
+
+function financeMoney(entry) {
+  return `${entry.currency || "USD"} ${Number(entry.amount || 0).toFixed(2)}`;
+}
+
+function financeConfirmationText(draft) {
+  const entry = draft.entry || {};
+  const amount = `${entry.currency || "USD"} ${Number(entry.amount || 0).toFixed(2)}`;
+  const base = `${amount} ${entry.description || entry.category || "finance item"}`;
+  if (draft.status === "booked") {
+    return [
+      `Booked: ${base}.`,
+      `Category: ${entry.category || "uncategorized"}.`,
+      `Lane: ${entry.lane || "unknown"}.`,
+      "Tax treatment still unreviewed."
+    ].join("\n");
+  }
+  return [
+    `Finance draft captured: ${base}.`,
+    `Category: ${entry.category || "uncategorized"}.`,
+    `Lane: ${entry.lane || "unknown"}.`,
+    "Pending review; final ledger not updated."
+  ].join("\n");
+}
+
+async function commandFinanceConfirm(draftId, options) {
+  const draftPath = financeDraftPath(draftId);
+  let draft;
+  try {
+    draft = await readJson(draftPath);
+  } catch {
+    fail(`unknown finance draft: ${draftId}`);
+  }
+  const text = financeConfirmationText(draft);
+  const chatId = String(draft.source?.chat_id || "").trim();
+  if (!options.send) {
+    console.log("Finance confirmation preview");
+    console.log(`Draft: ${draft.id}`);
+    console.log(`Would send: ${chatId ? "yes" : "no source chat id"}`);
+    console.log("");
+    console.log(text);
+    return;
+  }
+  if (!chatId) fail("draft has no source chat id");
+  const code = await spawnInherited(process.execPath, [
+    telegramReplyRunner,
+    "--chat-id", chatId,
+    "--text", text
+  ]);
+  if (code !== 0) fail("finance confirmation reply failed", code);
+}
+
+async function commandFinanceMonth(month) {
+  const { ledgerPath, entries } = await readLedgerEntries(month);
+  console.log(`Finance ledger month ${month}`);
+  console.log(`Ledger: ${relative(repoRoot, ledgerPath).split(sep).join("/")}`);
+  if (!entries.length) {
+    console.log("No booked entries.");
+    return;
+  }
+  console.log("BOOKED AT            TYPE      AMOUNT       CATEGORY                 LANE                         DESCRIPTION");
+  for (const entry of entries) {
+    console.log(
+      `${String(entry.booked_at || "").slice(0, 19).padEnd(20)} ` +
+      `${String(entry.type || "unknown").padEnd(9)} ` +
+      `${financeMoney(entry).padEnd(12)} ` +
+      `${String(entry.category || "uncategorized").padEnd(24)} ` +
+      `${String(entry.lane || "unknown").padEnd(28)} ` +
+      `${String(entry.description || "").slice(0, 80)}`
+    );
+  }
+}
+
+function financeTotalsByCurrency(entries) {
+  const totals = new Map();
+  for (const entry of entries) {
+    const currency = entry.currency || "USD";
+    const bucket = totals.get(currency) || { revenue: 0, expense: 0, net: 0, count: 0 };
+    const amount = Number(entry.amount || 0);
+    if (entry.type === "revenue") bucket.revenue += amount;
+    else if (entry.type === "expense") bucket.expense += amount;
+    bucket.net = bucket.revenue - bucket.expense;
+    bucket.count += 1;
+    totals.set(currency, bucket);
+  }
+  return totals;
+}
+
+async function commandFinanceTotals(month) {
+  const { entries } = await readLedgerEntries(month);
+  console.log(`Finance totals ${month}`);
+  if (!entries.length) {
+    console.log("No booked entries.");
+    return;
+  }
+  console.log("CURRENCY  ENTRIES  REVENUE      EXPENSE      NET");
+  for (const [currency, total] of financeTotalsByCurrency(entries)) {
+    console.log(
+      `${currency.padEnd(9)} ${String(total.count).padEnd(8)} ` +
+      `${total.revenue.toFixed(2).padEnd(12)} ` +
+      `${total.expense.toFixed(2).padEnd(12)} ` +
+      `${total.net.toFixed(2)}`
+    );
+  }
+  const byLane = new Map();
+  for (const entry of entries) {
+    const key = `${entry.currency || "USD"}:${entry.lane || "unknown"}`;
+    const current = byLane.get(key) || { currency: entry.currency || "USD", lane: entry.lane || "unknown", revenue: 0, expense: 0 };
+    if (entry.type === "revenue") current.revenue += Number(entry.amount || 0);
+    else if (entry.type === "expense") current.expense += Number(entry.amount || 0);
+    byLane.set(key, current);
+  }
+  console.log("\nBY LANE");
+  console.log("CURRENCY  LANE                         REVENUE      EXPENSE      NET");
+  for (const value of byLane.values()) {
+    console.log(
+      `${value.currency.padEnd(9)} ${value.lane.padEnd(28)} ` +
+      `${value.revenue.toFixed(2).padEnd(12)} ` +
+      `${value.expense.toFixed(2).padEnd(12)} ` +
+      `${(value.revenue - value.expense).toFixed(2)}`
+    );
+  }
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  if (!/[",\n\r]/.test(text)) return text;
+  return `"${text.replace(/"/g, "\"\"")}"`;
+}
+
+async function commandFinanceExport(month) {
+  const { entries } = await readLedgerEntries(month);
+  const exportDir = resolve(repoRoot, "operations/finance/exports");
+  const exportPath = resolve(exportDir, `${month}.csv`);
+  await mkdir(exportDir, { recursive: true });
+  const headers = [
+    "booked_at",
+    "type",
+    "amount",
+    "currency",
+    "category",
+    "lane",
+    "description",
+    "draft_id",
+    "tax_treatment_reviewed"
+  ];
+  const lines = [headers.join(",")];
+  for (const entry of entries) {
+    lines.push([
+      entry.booked_at,
+      entry.type,
+      entry.amount,
+      entry.currency,
+      entry.category,
+      entry.lane,
+      entry.description,
+      entry.source?.draft_id,
+      entry.controls?.tax_treatment_reviewed
+    ].map(csvCell).join(","));
+  }
+  await writeFile(exportPath, `${lines.join("\n")}\n`, { mode: 0o600 });
+  console.log(`Finance CSV exported: ${relative(repoRoot, exportPath).split(sep).join("/")}`);
+  console.log(`Entries: ${entries.length}`);
 }
 
 async function ledgerContainsDraft(ledgerPath, draftId) {

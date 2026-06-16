@@ -88,6 +88,11 @@ Available commands:
 | `hub finance drafts` | List draft finance captures |
 | `hub finance draft <id>` | Inspect a draft finance capture and its promotion boundary |
 | `hub finance promote <id> --approved` | Promote an approved draft into the internal monthly finance ledger |
+| `hub finance confirm <id>` | Preview a Telegram confirmation for a draft or booked entry |
+| `hub finance confirm <id> --send` | Send the confirmation back to the source Telegram chat |
+| `hub finance month YYYY-MM` | List booked ledger entries for one month |
+| `hub finance totals --month YYYY-MM` | Summarize revenue, expenses, and net by currency and lane |
+| `hub finance export --month YYYY-MM --format csv` | Export one month of booked ledger entries to local CSV |
 
 Dynamic input:
 

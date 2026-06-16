@@ -19,12 +19,16 @@ Added a draft-safe path for COS-Business expense and revenue logging from Telegr
 - Added draft storage under `operations/finance/drafts/telegram/`.
 - Documented the promotion boundary in finance and Telegram approval docs.
 - Added `hub finance promote <draft-id> --approved` after the first approved promotion request.
+- Added monthly finance review commands: `hub finance month`, `hub finance totals`, and `hub finance export`.
+- Added `hub finance confirm <draft-id>` preview and `--send` path for Telegram confirmations.
 
 ## Boundary
 
 The capture workflow creates local draft records only. It does not update final finance books, revenue scoreboards, taxes, payments, statements, or external systems.
 
 Final booking requires explicit promotion approval and writes to the internal monthly JSONL ledger. It still does not decide tax treatment.
+
+Telegram confirmation sending remains explicit. Preview is default; `--send` is required for external delivery.
 
 ## Review Notes
 

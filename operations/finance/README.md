@@ -56,6 +56,32 @@ Promotion appends one JSON ledger entry under `operations/finance/ledger/YYYY/MM
 
 Promotion does not decide tax treatment. Ledger entries currently set `tax_treatment_reviewed: false`.
 
+## Monthly Review
+
+Use these commands to inspect and export booked records:
+
+```bash
+hub finance month 2026-06
+hub finance totals --month 2026-06
+hub finance export --month 2026-06 --format csv
+```
+
+CSV exports are written under `operations/finance/exports/` and are ignored by Git.
+
+## Telegram Confirmation
+
+Preview a confirmation message:
+
+```bash
+hub finance confirm <draft-id>
+```
+
+Send it only after explicit approval:
+
+```bash
+hub finance confirm <draft-id> --send
+```
+
 ## Control Rules
 
 - Do not infer tax treatment from a Telegram message.
