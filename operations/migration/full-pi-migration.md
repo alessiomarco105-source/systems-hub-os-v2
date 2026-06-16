@@ -40,7 +40,7 @@ Pi plus an LLM is not enough for unattended operations. A complete system still 
 | Telegram interactive router | scaffolded, not activated |
 | Scheduler activation | pending |
 | Codex automation retirement | pending |
-| Cloud/always-on runner | pending decision |
+| Cloud/always-on runner | plan built, pending activation approval |
 
 ## Cutover Rule
 
@@ -64,3 +64,5 @@ Option 2: Cloud runner
 - Trade-off: needs cloud setup, secrets management, and monitoring.
 
 → Recommendation: Option 2 for final operations; use Option 1 only for short pilot testing.
+
+Current v1 plan: use GitHub Actions first, with manual dispatch before schedules and artifacts before commit-back.

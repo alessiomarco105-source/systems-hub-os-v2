@@ -11,6 +11,13 @@ Runtime script: `runtime/scripts/run-job.mjs`
 
 The scheduler adapter maps `operations/jobs/registry.yaml` entries to governed task manifests.
 
+## Runner Plans
+
+- Local pilot: `runtime/scheduler/local-runner.md`
+- Cloud runner decision: `runtime/scheduler/cloud-runner.md`
+- GitHub Actions runbook: `runtime/scheduler/github-actions-runbook.md`
+- GitHub Actions workflow template: `runtime/scheduler/templates/github-actions-systems-hub-jobs.yml.md`
+
 ## Commands
 
 ```bash
