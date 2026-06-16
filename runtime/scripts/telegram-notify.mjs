@@ -44,6 +44,27 @@ function credential(name, service) {
   return process.env[name] || keychain(service);
 }
 
+const channels = {
+  operations: {
+    tokenEnv: "SYSTEMS_HUB_TELEGRAM_OPERATIONS_BOT_TOKEN",
+    tokenService: "systems-hub-telegram-operations-bot-token",
+    chatEnv: "SYSTEMS_HUB_TELEGRAM_OPERATIONS_CHAT_ID",
+    chatService: "systems-hub-telegram-operations-chat-id"
+  },
+  social: {
+    tokenEnv: "SYSTEMS_HUB_TELEGRAM_SOCIAL_BOT_TOKEN",
+    tokenService: "systems-hub-telegram-social-bot-token",
+    chatEnv: "SYSTEMS_HUB_TELEGRAM_SOCIAL_CHAT_ID",
+    chatService: "systems-hub-telegram-social-chat-id"
+  },
+  signup: {
+    tokenEnv: "SYSTEMS_HUB_TELEGRAM_SIGNUP_BOT_TOKEN",
+    tokenService: "systems-hub-telegram-signup-bot-token",
+    chatEnv: "SYSTEMS_HUB_TELEGRAM_SIGNUP_CHAT_ID",
+    chatService: "systems-hub-telegram-signup-chat-id"
+  }
+};
+
 function postTelegram(token, chatId, text) {
   const body = JSON.stringify({
     chat_id: chatId,
@@ -76,21 +97,10 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const channel = options.channel || "operations";
   const text = options.text || "";
+  const config = channels[channel];
+  if (!config) fail(`unsupported Telegram channel=${channel}`);
   if (!text.trim()) fail("--text is required");
   if (text.length > 3500) fail("message exceeds 3500 characters");
-
-  const tokenService = channel === "social"
-    ? "systems-hub-telegram-social-bot-token"
-    : "systems-hub-telegram-operations-bot-token";
-  const tokenEnv = channel === "social"
-    ? "SYSTEMS_HUB_TELEGRAM_SOCIAL_BOT_TOKEN"
-    : "SYSTEMS_HUB_TELEGRAM_OPERATIONS_BOT_TOKEN";
-  const chatEnv = channel === "social"
-    ? "SYSTEMS_HUB_TELEGRAM_SOCIAL_CHAT_ID"
-    : "SYSTEMS_HUB_TELEGRAM_OPERATIONS_CHAT_ID";
-  const chatService = channel === "social"
-    ? "systems-hub-telegram-social-chat-id"
-    : "systems-hub-telegram-operations-chat-id";
 
   if (options.dryRun) {
     process.stdout.write(`Telegram dry-run channel=${channel}\n`);
@@ -98,8 +108,8 @@ async function main() {
     return;
   }
 
-  const token = credential(tokenEnv, tokenService);
-  const chatId = credential(chatEnv, chatService);
+  const token = credential(config.tokenEnv, config.tokenService);
+  const chatId = credential(config.chatEnv, config.chatService);
   if (!token) fail(`missing Telegram token for channel=${channel}`);
   if (!chatId) fail(`missing Telegram chat id for channel=${channel}`);
   await postTelegram(token, chatId, text);
