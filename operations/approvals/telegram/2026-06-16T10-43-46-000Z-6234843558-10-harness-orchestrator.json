@@ -1,0 +1,44 @@
+{
+  "schema": "systems_hub.telegram_task_envelope/v1",
+  "status": "pending_marco_approval",
+  "created_at": "2026-06-16T10:50:11.943Z",
+  "source": {
+    "channel": "interactive",
+    "bot": "@Systemshub_bot",
+    "chat_id": "6234843558",
+    "message_id": 10,
+    "from": {
+      "username": "Marcociccio4",
+      "first_name": "Marco"
+    },
+    "date": "2026-06-16T10:43:46.000Z"
+  },
+  "route": {
+    "proposed_agent": "harness-orchestrator",
+    "routed_by": "runtime/scripts/telegram-router.mjs",
+    "confidence": "default"
+  },
+  "request": {
+    "text": "Give me a short business recap",
+    "attachments": []
+  },
+  "approval_tier": {
+    "tier": "tier_1_light",
+    "required_approval": "light",
+    "reason": "low-risk internal logging, read-only report, draft, task, or summary",
+    "policy": "operations/approvals/policy.md"
+  },
+  "permissions": {
+    "may_run_model": false,
+    "may_write_files": false,
+    "may_send_replies": false,
+    "may_execute_commands": false,
+    "may_commit": false,
+    "may_publish_or_pay": false
+  },
+  "approval": {
+    "required": true,
+    "syntax": "approved: light 2026-06-16T10-43-46-000Z-6234843558-10-harness-orchestrator",
+    "notes": "Envelope capture only. Running the routed agent requires a separate approved command using the tier shown above."
+  }
+}

@@ -291,6 +291,7 @@ async function main() {
 }
 
 main().catch(error => {
-  process.stderr.write(`error: ${error.message}\n`);
+  const details = error.message || error.code || error.name || String(error);
+  process.stderr.write(`error: ${details}\n`);
   process.exitCode = 1;
 });
