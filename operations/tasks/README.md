@@ -79,6 +79,8 @@ Available commands:
 | `hub telegram envelope <id>` | Inspect one captured envelope and its approval boundary |
 | `hub telegram run-light <id> --dry-run` | Preview a light-approved envelope run without spending tokens |
 | `hub telegram run-light <id>` | Run a Tier 0/Tier 1 envelope through a mapped read-only task |
+| `hub telegram reply <id> --from-output latest --dry-run` | Preview a Telegram reply from the latest saved output |
+| `hub telegram reply <id> --from-output latest` | Send the latest saved output to the original Telegram chat |
 | `hub tui` | Open the interactive terminal interface |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 

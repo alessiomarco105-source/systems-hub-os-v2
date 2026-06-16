@@ -18,6 +18,7 @@ hub telegram router --limit 5 --create-envelope
 hub telegram envelopes
 hub telegram envelope <envelope-id>
 hub telegram run-light <envelope-id> --dry-run
+hub telegram reply <envelope-id> --from-output latest --dry-run
 ```
 
 Running the routed agent requires a separate Marco approval. The approval syntax should match the envelope tier:
@@ -35,3 +36,14 @@ hub telegram run-light <envelope-id>
 ```
 
 This only works for Tier 0/Tier 1 envelopes and only when the proposed agent maps to an existing safe read-only task manifest. It refuses strong/protected envelopes and agents without a safe mapping.
+
+## Reply Delivery
+
+After an approved light run succeeds, use:
+
+```bash
+hub telegram reply <envelope-id> --from-output latest --dry-run
+hub telegram reply <envelope-id> --from-output latest
+```
+
+Reply delivery sends the latest passing output for the envelope's executed task back to the original Telegram chat. It is not automatic.

@@ -22,6 +22,7 @@ const telegramApprovalDir = resolve(repoRoot, "operations/approvals/telegram");
 const taskRunner = resolve(repoRoot, "runtime/scripts/run-task-manifest.mjs");
 const jobRunner = resolve(repoRoot, "runtime/scripts/run-job.mjs");
 const telegramHealthRunner = resolve(repoRoot, "runtime/scripts/telegram-health.mjs");
+const telegramReplyRunner = resolve(repoRoot, "runtime/scripts/telegram-reply.mjs");
 const telegramRouterRunner = resolve(repoRoot, "runtime/scripts/telegram-router.mjs");
 const dynamicPrefix = ".hub-runtime-";
 
@@ -47,6 +48,7 @@ Usage:
   hub telegram envelopes
   hub telegram envelope <envelope-id>
   hub telegram run-light <envelope-id> [--dry-run] [--review]
+  hub telegram reply <envelope-id> --from-output latest [--dry-run]
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -414,7 +416,13 @@ async function commandTelegram(args) {
     await commandTelegramRunLight(positional[0], options);
     return;
   }
-  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N] [--create-envelope] | hub telegram envelopes | hub telegram envelope <envelope-id> | hub telegram run-light <envelope-id> [--dry-run] [--review]");
+  if (command === "reply") {
+    const { options, positional } = parseFlags(rest, new Set(["from-output", "dry-run"]), new Set(["dry-run"]));
+    if (positional.length !== 1) fail("usage: hub telegram reply <envelope-id> --from-output latest [--dry-run]");
+    await commandTelegramReply(positional[0], options);
+    return;
+  }
+  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N] [--create-envelope] | hub telegram envelopes | hub telegram envelope <envelope-id> | hub telegram run-light <envelope-id> [--dry-run] [--review] | hub telegram reply <envelope-id> --from-output latest [--dry-run]");
 }
 
 async function commandTelegramEnvelopes() {
@@ -486,6 +494,9 @@ async function commandTelegramEnvelope(id) {
   if (["tier_0_intake", "tier_1_light"].includes(envelope.approval_tier?.tier)) {
     console.log(`- Light run preview: hub telegram run-light ${basename(path, ".json")} --dry-run`);
   }
+  if (envelope.status === "light_run_completed") {
+    console.log(`- Reply preview: hub telegram reply ${basename(path, ".json")} --from-output latest --dry-run`);
+  }
 }
 
 function taskForEnvelope(envelope) {
@@ -540,6 +551,82 @@ async function markEnvelopeRun(path, envelope, taskId) {
     runner: "hub telegram run-light"
   };
   await writeFile(path, `${JSON.stringify(updated, null, 2)}\n`, { mode: 0o600 });
+}
+
+function formatTelegramReply(text, receipt) {
+  const header = `Systems Hub reply (${receipt.task_id})\n`;
+  const footer = `\n\nReceipt: ${receipt.run_id}`;
+  const clean = text.trim();
+  const maxBody = 3500 - header.length - footer.length;
+  const body = clean.length > maxBody
+    ? `${clean.slice(0, Math.max(0, maxBody - 80)).trim()}\n\n[Trimmed for Telegram. Full output is saved locally.]`
+    : clean;
+  return `${header}${body}${footer}`;
+}
+
+async function markEnvelopeReply(path, envelope, receipt, dryRun) {
+  const updated = structuredClone(envelope);
+  updated.reply = {
+    status: dryRun ? "dry_run" : "sent",
+    sent_at: dryRun ? null : new Date().toISOString(),
+    source: "latest",
+    task_id: receipt.task_id,
+    receipt: relative(repoRoot, receipt.__path).split(sep).join("/"),
+    output: receipt.output?.path || null,
+    runner: "hub telegram reply"
+  };
+  await writeFile(path, `${JSON.stringify(updated, null, 2)}\n`, { mode: 0o600 });
+}
+
+async function latestReceiptForEnvelope(envelope) {
+  const taskId = envelope.execution?.task_id;
+  if (!taskId) fail("envelope has no execution task id");
+  const candidates = (await receipts()).filter(({ receipt }) =>
+    receipt.task_id === taskId &&
+    (!receipt.task_kind || receipt.task_kind === "standard") &&
+    receipt.validation?.status === "pass"
+  );
+  if (!candidates.length) fail(`no passing receipt found for envelope task: ${taskId}`);
+  const selected = candidates[0];
+  selected.receipt.__path = selected.path;
+  return selected.receipt;
+}
+
+async function commandTelegramReply(id, options) {
+  if (options["from-output"] !== "latest") {
+    fail("usage: hub telegram reply <envelope-id> --from-output latest [--dry-run]");
+  }
+  const path = envelopePath(id);
+  let envelope;
+  try {
+    envelope = await readJson(path);
+  } catch {
+    fail(`unknown Telegram envelope: ${id}`);
+  }
+  if (envelope.schema !== "systems_hub.telegram_task_envelope/v1") {
+    fail(`not a Telegram task envelope: ${id}`);
+  }
+  if (envelope.status !== "light_run_completed") {
+    fail(`envelope has not completed a light run: ${envelope.status || "unknown"}`);
+  }
+  const chatId = String(envelope.source?.chat_id || "").trim();
+  if (!chatId) fail("envelope has no source chat id");
+  const receipt = await latestReceiptForEnvelope(envelope);
+  if (!receipt.output?.path) fail("latest receipt has no output path");
+  const outputPath = resolve(repoRoot, receipt.output.path);
+  if (!outputPath.startsWith(`${usageDir}${sep}`)) fail("latest output path is outside usage receipts");
+  const output = await readFile(outputPath, "utf8");
+  const replyText = formatTelegramReply(output, receipt);
+
+  const runnerArgs = [
+    telegramReplyRunner,
+    "--chat-id", chatId,
+    "--text", replyText
+  ];
+  if (options["dry-run"]) runnerArgs.push("--dry-run");
+  const code = await spawnInherited(process.execPath, runnerArgs);
+  if (code !== 0) fail("telegram reply failed", code);
+  if (!options["dry-run"]) await markEnvelopeReply(path, envelope, receipt, false);
 }
 
 async function commandTelegramRunLight(id, options) {
