@@ -77,6 +77,8 @@ Available commands:
 | `hub telegram router --limit 5 --create-envelope` | Capture recent inbound messages as pending local approval envelopes |
 | `hub telegram envelopes` | List captured Telegram approval envelopes |
 | `hub telegram envelope <id>` | Inspect one captured envelope and its approval boundary |
+| `hub telegram run-light <id> --dry-run` | Preview a light-approved envelope run without spending tokens |
+| `hub telegram run-light <id>` | Run a Tier 0/Tier 1 envelope through a mapped read-only task |
 | `hub tui` | Open the interactive terminal interface |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 
