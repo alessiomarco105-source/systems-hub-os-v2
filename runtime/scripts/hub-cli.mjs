@@ -20,6 +20,8 @@ const taskDir = resolve(repoRoot, "operations/tasks");
 const usageDir = resolve(repoRoot, "operations/runs/usage");
 const taskRunner = resolve(repoRoot, "runtime/scripts/run-task-manifest.mjs");
 const jobRunner = resolve(repoRoot, "runtime/scripts/run-job.mjs");
+const telegramHealthRunner = resolve(repoRoot, "runtime/scripts/telegram-health.mjs");
+const telegramRouterRunner = resolve(repoRoot, "runtime/scripts/telegram-router.mjs");
 const dynamicPrefix = ".hub-runtime-";
 
 function fail(message, exitCode = 1) {
@@ -39,6 +41,8 @@ Usage:
   hub tui
   hub jobs
   hub job <job-id> [--dry-run] [--notify]
+  hub telegram health [--verbose]
+  hub telegram router [--dry-run] [--limit N]
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -347,10 +351,11 @@ async function commandValidate(args) {
 
 async function commandJobs() {
   const jobs = await jobRegistry();
-  console.log("JOB ID                         OWNER                       V2 EXECUTION                 STATUS");
+  console.log("JOB ID                         OWNER                       CHANNEL      V2 EXECUTION                 STATUS");
   for (const job of jobs) {
     console.log(
       `${job.id.padEnd(30)} ${String(job.owner || "unknown").padEnd(27)} ` +
+      `${String(job.notify_channel || "operations").padEnd(12)} ` +
       `${String(job.v2_execution || "unknown").padEnd(28)} ${job.status || "unknown"}`
     );
   }
@@ -364,6 +369,31 @@ async function commandJob(args) {
   if (options.notify) runnerArgs.push("--notify");
   const code = await spawnInherited(process.execPath, runnerArgs);
   if (code !== 0) fail(`job failed: ${positional[0]}`, code);
+}
+
+async function commandTelegram(args) {
+  const command = args[0];
+  const rest = args.slice(1);
+  if (command === "health") {
+    const { options, positional } = parseFlags(rest, new Set(["verbose"]), new Set(["verbose"]));
+    if (positional.length) fail("usage: hub telegram health [--verbose]");
+    const runnerArgs = [telegramHealthRunner];
+    if (options.verbose) runnerArgs.push("--verbose");
+    const code = await spawnInherited(process.execPath, runnerArgs);
+    if (code !== 0) fail("telegram health failed", code);
+    return;
+  }
+  if (command === "router") {
+    const { options, positional } = parseFlags(rest, new Set(["dry-run", "limit"]), new Set(["dry-run"]));
+    if (positional.length) fail("usage: hub telegram router [--dry-run] [--limit N]");
+    const runnerArgs = [telegramRouterRunner];
+    if (options["dry-run"]) runnerArgs.push("--dry-run");
+    if (options.limit) runnerArgs.push("--limit", options.limit);
+    const code = await spawnInherited(process.execPath, runnerArgs);
+    if (code !== 0) fail("telegram router failed", code);
+    return;
+  }
+  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N]");
 }
 
 async function commandRun(args) {
@@ -648,8 +678,8 @@ async function commandStatus() {
     // Project-local Pi settings are optional.
   }
   console.log(`Pi context tools: ${contextTools}`);
-  console.log("Schedulers: not connected");
-  console.log("Telegram: not connected to v2 CLI");
+  console.log("Schedulers: v2 local job runner available; unattended cloud runner not selected");
+  console.log("Telegram: v2 outbound channels available; run `hub telegram health`");
   console.log("Write mode: disabled");
 }
 
@@ -1430,6 +1460,9 @@ async function main() {
       break;
     case "job":
       await commandJob(args);
+      break;
+    case "telegram":
+      await commandTelegram(args);
       break;
     case "run":
       await commandRun(args);

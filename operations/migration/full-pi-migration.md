@@ -34,9 +34,10 @@ Pi plus an LLM is not enough for unattended operations. A complete system still 
 | Output validation and receipts | built |
 | Manual `hub` CLI | built |
 | TUI agent/router access | built |
-| Job registry | migration in progress |
+| Job registry | built, awaiting unattended schedule |
 | v2 job dry-run adapter | built |
-| Telegram adapter | built, not activated |
+| Telegram outbound adapter | built and locally tested |
+| Telegram interactive router | scaffolded, not activated |
 | Scheduler activation | pending |
 | Codex automation retirement | pending |
 | Cloud/always-on runner | pending decision |

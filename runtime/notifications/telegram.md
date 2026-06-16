@@ -8,6 +8,8 @@ updated: 2026-06-16
 # Telegram Adapter
 
 Runtime script: `runtime/scripts/telegram-notify.mjs`
+Health script: `runtime/scripts/telegram-health.mjs`
+Interactive router scaffold: `runtime/scripts/telegram-router.mjs`
 
 ## Channels
 
@@ -22,7 +24,7 @@ Runtime script: `runtime/scripts/telegram-notify.mjs`
 - `operations`: configured in the v2 Keychain and tested.
 - `social`: configured in the v2 Keychain and tested.
 - `signup`: configured in the v2 Keychain. This channel maps to `Trader'sHub_alerts_bot`.
-- Interactive routing bot: not migrated yet. This is a separate inbound bot/webhook workflow, not the same as outbound notifications.
+- `interactive`: scaffolded for inbound routing, but credentials and execution workflow are not activated yet.
 
 ## Safety
 
@@ -30,3 +32,5 @@ Runtime script: `runtime/scripts/telegram-notify.mjs`
 - `--dry-run` prints the intended message without network delivery.
 - Actual sends require explicit command execution and valid secrets.
 - Product signup notifications may continue to run from the Trader's Hub product stack until the signup channel is verified in v2.
+- Run `hub telegram health` to inspect local credential readiness without printing secrets.
+- Run `hub telegram router --dry-run` to verify the inbound router scaffold without fetching Telegram updates.

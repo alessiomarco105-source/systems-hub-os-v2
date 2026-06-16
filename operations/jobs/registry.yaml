@@ -10,6 +10,7 @@ jobs:
     cadence: weekly
     schedule: Monday 08:00
     timezone: America/New_York
+    notify_channel: operations
     v2_execution: v2-dry-run-ready
     status: migration-in-progress
   - id: daily-agent-recap
@@ -19,6 +20,7 @@ jobs:
     cadence: daily
     schedule: 20:00
     timezone: America/New_York
+    notify_channel: operations
     v2_execution: v2-dry-run-ready
     status: migration-in-progress
   - id: security-exposure-review
@@ -28,6 +30,7 @@ jobs:
     cadence: every-three-days
     schedule: runner-managed
     timezone: America/New_York
+    notify_channel: operations
     v2_execution: draft-provider-approval-required
     status: migration-in-progress
   - id: social-kpi-report
@@ -37,5 +40,6 @@ jobs:
     cadence: weekly
     schedule: Sunday 19:00
     timezone: America/New_York
+    notify_channel: social
     v2_execution: v2-dry-run-ready
     status: migration-in-progress

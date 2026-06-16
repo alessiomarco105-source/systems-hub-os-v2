@@ -80,6 +80,7 @@ function spawnCapture(command, args) {
 }
 
 function notificationChannel(job) {
+  if (job.notify_channel) return job.notify_channel;
   if (job.id === "social-kpi-report") return "social";
   return "operations";
 }

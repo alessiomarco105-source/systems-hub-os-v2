@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { execFileSync } from "node:child_process";
 import https from "node:https";
+import { credential, telegramChannels } from "./lib/telegram-config.mjs";
 
 function fail(message) {
   throw new Error(message);
@@ -24,46 +24,6 @@ function parseArgs(args) {
   }
   return options;
 }
-
-function keychain(service) {
-  try {
-    return execFileSync("security", [
-      "find-generic-password",
-      "-a",
-      process.env.USER || "",
-      "-s",
-      service,
-      "-w"
-    ], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
-  } catch {
-    return "";
-  }
-}
-
-function credential(name, service) {
-  return process.env[name] || keychain(service);
-}
-
-const channels = {
-  operations: {
-    tokenEnv: "SYSTEMS_HUB_TELEGRAM_OPERATIONS_BOT_TOKEN",
-    tokenService: "systems-hub-telegram-operations-bot-token",
-    chatEnv: "SYSTEMS_HUB_TELEGRAM_OPERATIONS_CHAT_ID",
-    chatService: "systems-hub-telegram-operations-chat-id"
-  },
-  social: {
-    tokenEnv: "SYSTEMS_HUB_TELEGRAM_SOCIAL_BOT_TOKEN",
-    tokenService: "systems-hub-telegram-social-bot-token",
-    chatEnv: "SYSTEMS_HUB_TELEGRAM_SOCIAL_CHAT_ID",
-    chatService: "systems-hub-telegram-social-chat-id"
-  },
-  signup: {
-    tokenEnv: "SYSTEMS_HUB_TELEGRAM_SIGNUP_BOT_TOKEN",
-    tokenService: "systems-hub-telegram-signup-bot-token",
-    chatEnv: "SYSTEMS_HUB_TELEGRAM_SIGNUP_CHAT_ID",
-    chatService: "systems-hub-telegram-signup-chat-id"
-  }
-};
 
 function postTelegram(token, chatId, text) {
   const body = JSON.stringify({
@@ -97,8 +57,9 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const channel = options.channel || "operations";
   const text = options.text || "";
-  const config = channels[channel];
+  const config = telegramChannels[channel];
   if (!config) fail(`unsupported Telegram channel=${channel}`);
+  if (config.direction !== "outbound") fail(`Telegram channel=${channel} is not an outbound notification channel`);
   if (!text.trim()) fail("--text is required");
   if (text.length > 3500) fail("message exceeds 3500 characters");
 

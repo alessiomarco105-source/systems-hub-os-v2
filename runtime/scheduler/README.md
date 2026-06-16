@@ -18,9 +18,19 @@ hub jobs
 hub job weekly-business-review --dry-run
 hub job daily-agent-recap --dry-run
 hub job social-kpi-report --dry-run
+hub job weekly-business-review --notify
 ```
 
-Actual scheduled activation is pending. The local CLI adapter exists, but no launchd, cron, or cloud schedule has been activated in v2.
+Manual job execution and Telegram notification delivery are available through the v2 CLI. Actual unattended scheduled activation is pending: no launchd, cron, or cloud schedule has been activated in v2.
+
+## Notification Mapping
+
+Each job declares its notification channel in `operations/jobs/registry.yaml`.
+
+- `weekly-business-review`: `operations`
+- `daily-agent-recap`: `operations`
+- `security-exposure-review`: `operations`
+- `social-kpi-report`: `social`
 
 ## Cutover
 
