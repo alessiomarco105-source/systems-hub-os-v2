@@ -70,15 +70,26 @@ jobs:
           hub job "${{ github.event.inputs.job_id }}" --dry-run
 
       - name: Run selected job
+        id: run_job
         run: |
-          hub job "${{ github.event.inputs.job_id }}" --notify
+          set -o pipefail
+          hub job "${{ github.event.inputs.job_id }}" --notify | tee /tmp/systems-hub-job.log
+          receipt="$(awk -F': ' '/^Receipt: /{print $2}' /tmp/systems-hub-job.log | tail -1)"
+          output="$(awk -F': ' '/^Output: /{print $2}' /tmp/systems-hub-job.log | tail -1)"
+          manifest="${receipt%.json}.manifest.json"
+          echo "receipt=$receipt" >> "$GITHUB_OUTPUT"
+          echo "output=$output" >> "$GITHUB_OUTPUT"
+          echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
 
       - name: Upload run receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: systems-hub-run-receipts
-          path: operations/runs/usage/**
+          path: |
+            ${{ steps.run_job.outputs.receipt }}
+            ${{ steps.run_job.outputs.output }}
+            ${{ steps.run_job.outputs.manifest }}
 ```
 
 ## Notes
