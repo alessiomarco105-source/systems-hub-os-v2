@@ -1,0 +1,38 @@
+{
+  "schema": "systems_hub.telegram_task_envelope/v1",
+  "status": "pending_marco_approval",
+  "created_at": "2026-06-16T10:27:08.996Z",
+  "source": {
+    "channel": "interactive",
+    "bot": "@Systemshub_bot",
+    "chat_id": "6234843558",
+    "message_id": 9,
+    "from": {
+      "username": "Marcociccio4",
+      "first_name": "Marco"
+    },
+    "date": "2026-06-16T10:20:26.000Z"
+  },
+  "route": {
+    "proposed_agent": "harness-orchestrator",
+    "routed_by": "runtime/scripts/telegram-router.mjs",
+    "confidence": "default"
+  },
+  "request": {
+    "text": "test",
+    "attachments": []
+  },
+  "permissions": {
+    "may_run_model": false,
+    "may_write_files": false,
+    "may_send_replies": false,
+    "may_execute_commands": false,
+    "may_commit": false,
+    "may_publish_or_pay": false
+  },
+  "approval": {
+    "required": true,
+    "syntax": "approved: telegram envelope 2026-06-16T10-20-26-000Z-6234843558-9-harness-orchestrator",
+    "notes": "Envelope capture only. Running the routed agent requires a separate approved command."
+  }
+}

@@ -18,6 +18,7 @@ const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = resolve(dirname(scriptPath), "../..");
 const taskDir = resolve(repoRoot, "operations/tasks");
 const usageDir = resolve(repoRoot, "operations/runs/usage");
+const telegramApprovalDir = resolve(repoRoot, "operations/approvals/telegram");
 const taskRunner = resolve(repoRoot, "runtime/scripts/run-task-manifest.mjs");
 const jobRunner = resolve(repoRoot, "runtime/scripts/run-job.mjs");
 const telegramHealthRunner = resolve(repoRoot, "runtime/scripts/telegram-health.mjs");
@@ -42,7 +43,8 @@ Usage:
   hub jobs
   hub job <job-id> [--dry-run] [--notify]
   hub telegram health [--verbose]
-  hub telegram router [--dry-run] [--limit N]
+  hub telegram router [--dry-run] [--limit N] [--create-envelope]
+  hub telegram envelopes
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -384,16 +386,51 @@ async function commandTelegram(args) {
     return;
   }
   if (command === "router") {
-    const { options, positional } = parseFlags(rest, new Set(["dry-run", "limit"]), new Set(["dry-run"]));
-    if (positional.length) fail("usage: hub telegram router [--dry-run] [--limit N]");
+    const { options, positional } = parseFlags(rest, new Set(["dry-run", "limit", "create-envelope"]), new Set(["dry-run", "create-envelope"]));
+    if (positional.length) fail("usage: hub telegram router [--dry-run] [--limit N] [--create-envelope]");
     const runnerArgs = [telegramRouterRunner];
     if (options["dry-run"]) runnerArgs.push("--dry-run");
     if (options.limit) runnerArgs.push("--limit", options.limit);
+    if (options["create-envelope"]) runnerArgs.push("--create-envelope");
     const code = await spawnInherited(process.execPath, runnerArgs);
     if (code !== 0) fail("telegram router failed", code);
     return;
   }
-  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N]");
+  if (command === "envelopes") {
+    if (rest.length) fail("usage: hub telegram envelopes");
+    await commandTelegramEnvelopes();
+    return;
+  }
+  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N] [--create-envelope] | hub telegram envelopes");
+}
+
+async function commandTelegramEnvelopes() {
+  let entries = [];
+  try {
+    entries = await readdir(telegramApprovalDir, { withFileTypes: true });
+  } catch {
+    console.log("No Telegram envelopes found.");
+    return;
+  }
+  const files = entries
+    .filter(entry => entry.isFile() && entry.name.endsWith(".json"))
+    .map(entry => resolve(telegramApprovalDir, entry.name))
+    .sort()
+    .reverse();
+  if (!files.length) {
+    console.log("No Telegram envelopes found.");
+    return;
+  }
+  console.log("STATUS                   AGENT                         CREATED                 FILE");
+  for (const path of files.slice(0, 20)) {
+    const envelope = await readJson(path);
+    console.log(
+      `${String(envelope.status || "unknown").padEnd(24)} ` +
+      `${String(envelope.route?.proposed_agent || "unknown").padEnd(29)} ` +
+      `${String(envelope.created_at || "unknown").slice(0, 19).padEnd(23)} ` +
+      `${relative(repoRoot, path)}`
+    );
+  }
 }
 
 async function commandRun(args) {

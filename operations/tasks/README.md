@@ -50,7 +50,7 @@ The reviewer runs in a new Pi session with a different role and prompt. It canno
 | Social KPI Report | v2 dry-run adapter ready; schedule not activated |
 | Security Exposure Review | draft; protected-data provider approval required |
 
-No v2 schedule or Telegram send is active yet. Runtime adapters now exist for job dry-runs and Telegram delivery, but legacy Codex automations remain active until cutover verification passes.
+V2 Telegram delivery is locally available for approved manual sends. No unattended v2 schedule is active yet; legacy Codex automations remain active until cutover verification passes.
 
 ## Terminal CLI
 
@@ -72,6 +72,10 @@ Available commands:
 | `hub tokens --days N --limit N` | Audit token use, failed-run waste, review share, and most expensive runs |
 | `hub jobs` | Show recurring job migration status |
 | `hub job <job> --dry-run` | Verify a v2 job envelope without model or Telegram side effects |
+| `hub telegram health` | Show Telegram credential readiness without printing secrets |
+| `hub telegram router --dry-run` | Verify the inbound bot router without reading updates |
+| `hub telegram router --limit 5 --create-envelope` | Capture recent inbound messages as pending local approval envelopes |
+| `hub telegram envelopes` | List captured Telegram approval envelopes |
 | `hub tui` | Open the interactive terminal interface |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 

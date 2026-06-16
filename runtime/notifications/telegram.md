@@ -35,3 +35,5 @@ Interactive router scaffold: `runtime/scripts/telegram-router.mjs`
 - Product signup notifications may continue to run from the Trader's Hub product stack until the signup channel is verified in v2.
 - Run `hub telegram health` to inspect local credential readiness without printing secrets.
 - Run `hub telegram router --dry-run` to verify the inbound router scaffold without fetching Telegram updates.
+- Run `hub telegram router --limit 5 --create-envelope` to capture recent inbound messages as pending local approval envelopes.
+- Run `hub telegram envelopes` to list captured envelopes.
