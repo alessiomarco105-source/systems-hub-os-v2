@@ -45,12 +45,12 @@ The reviewer runs in a new Pi session with a different role and prompt. It canno
 
 | Routine | V2 state |
 |---|---|
-| Weekly Business Review | manual, read-only |
-| Daily Agent Recap | manual, read-only |
-| Social KPI Report | manual, read-only |
+| Weekly Business Review | v2 dry-run adapter ready; schedule not activated |
+| Daily Agent Recap | v2 dry-run adapter ready; schedule not activated |
+| Social KPI Report | v2 dry-run adapter ready; schedule not activated |
 | Security Exposure Review | draft; protected-data provider approval required |
 
-No v2 manifest is connected to a scheduler or Telegram.
+No v2 schedule or Telegram send is active yet. Runtime adapters now exist for job dry-runs and Telegram delivery, but legacy Codex automations remain active until cutover verification passes.
 
 ## Terminal CLI
 
@@ -70,6 +70,8 @@ Available commands:
 | `hub review latest [task]` | Review the latest passing standard-task receipt |
 | `hub costs --days N` | Aggregate provider-reported tokens and cost |
 | `hub tokens --days N --limit N` | Audit token use, failed-run waste, review share, and most expensive runs |
+| `hub jobs` | Show recurring job migration status |
+| `hub job <job> --dry-run` | Verify a v2 job envelope without model or Telegram side effects |
 | `hub tui` | Open the interactive terminal interface |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 
@@ -83,7 +85,7 @@ Dynamic input:
 
 The CLI removes runtime overlays after execution and ignores abandoned overlays in Git.
 
-The TUI is a convenience layer over the same commands. It does not add write, publish, schedule, deploy, or external-action powers. Dashboard, next-action, output, receipt, task, and token views are local inspection screens. `Run Task` and `Review Latest` are the only TUI entries that can call a model, and they still use the restricted runtime. The TUI may reuse project-local Pi theme colors from `.pi/settings.json`, but `hub` still launches governed model work with Pi extensions disabled. Use arrow keys or `j`/`k` to move, number keys to jump (`0` selects item 10), Enter to open an action, `r` to refresh, and `q` to quit.
+The TUI is a convenience layer over the same commands. It does not add write, publish, schedule, deploy, or external-action powers. Dashboard, agent-router, agent-registry, next-action, output, receipt, task, and token views are local inspection screens. `Run Task` and `Review Latest` are the only TUI entries that can call a model, and they still use the restricted runtime. The TUI may reuse project-local Pi theme colors from `.pi/settings.json`, but `hub` still launches governed model work with Pi extensions disabled. Use arrow keys or `j`/`k` to move, number keys to jump (`0` selects item 10), Enter to open an action, `r` to refresh, and `q` to quit.
 
 Token discipline:
 

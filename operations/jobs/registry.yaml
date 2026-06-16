@@ -1,7 +1,7 @@
 schema: systems_hub.job_registry/v2
 updated: 2026-06-15
 authority: definitions-only
-runtime_note: Existing schedules remain on their current runner until a v2 adapter is tested and approved.
+runtime_note: Existing schedules remain on their current runner until v2 scheduler and Telegram adapters are tested, approved, and activated.
 jobs:
   - id: weekly-business-review
     definition: weekly-business-review.md
@@ -10,8 +10,8 @@ jobs:
     cadence: weekly
     schedule: Monday 08:00
     timezone: America/New_York
-    v2_execution: manual-read-only
-    status: active-legacy-runner
+    v2_execution: v2-dry-run-ready
+    status: migration-in-progress
   - id: daily-agent-recap
     definition: daily-agent-recap.md
     task_manifest: ../tasks/daily-agent-recap.json
@@ -19,8 +19,8 @@ jobs:
     cadence: daily
     schedule: 20:00
     timezone: America/New_York
-    v2_execution: manual-read-only
-    status: active-legacy-runner
+    v2_execution: v2-dry-run-ready
+    status: migration-in-progress
   - id: security-exposure-review
     definition: security-exposure-review.md
     task_manifest: ../tasks/security-exposure-review.json
@@ -29,7 +29,7 @@ jobs:
     schedule: runner-managed
     timezone: America/New_York
     v2_execution: draft-provider-approval-required
-    status: active-legacy-runner
+    status: migration-in-progress
   - id: social-kpi-report
     definition: social-kpi-report.md
     task_manifest: ../tasks/social-kpi-report.json
@@ -37,5 +37,5 @@ jobs:
     cadence: weekly
     schedule: Sunday 19:00
     timezone: America/New_York
-    v2_execution: manual-read-only
-    status: active-legacy-runner
+    v2_execution: v2-dry-run-ready
+    status: migration-in-progress

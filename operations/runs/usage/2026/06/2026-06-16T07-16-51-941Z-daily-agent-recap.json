@@ -1,0 +1,77 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-16T07-16-51-941Z-daily-agent-recap",
+  "task_id": "daily-agent-recap",
+  "task_kind": "standard",
+  "started_at": "2026-06-16T07:16:30.052Z",
+  "finished_at": "2026-06-16T07:16:51.941Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "contract": {
+    "manifest_sha256": "ca25685a7a1780c2ef67c7fa9f8e7a83b7acdd630b47b97a40ec9e0a45befdd5",
+    "prompt_sha256": "425db993eb5cf934840d58a4872a966551235ae341b802b0a8be4bb231f0d687",
+    "ephemeral_manifest": false,
+    "manifest_path": "operations/runs/usage/2026/06/2026-06-16T07-16-51-941Z-daily-agent-recap.manifest.json"
+  },
+  "context": {
+    "files": [
+      "agents/roles/harness-orchestrator.md",
+      "operations/jobs/daily-agent-recap.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "operations/decisions/log.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "file_count": 6,
+    "total_bytes": 7544
+  },
+  "usage": {
+    "input": 1811,
+    "output": 821,
+    "cache_read": 1792,
+    "cache_write": 0,
+    "total_tokens": 4424,
+    "cost_usd": 0.0004884376000000001
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-16T07-16-51-941Z-daily-agent-recap.md",
+    "sha256": "c2df685fc8f9ecca5cd5dbfc79b31bcccd7519d19e6df2e2722f1956810132db",
+    "word_count": 377
+  },
+  "validation": {
+    "status": "fail",
+    "checks": [
+      "output words: 377/450",
+      "output starts with: ## Company",
+      "required section: Company",
+      "required section: Capabilities",
+      "required section: Projects",
+      "required section: Blocked",
+      "required section: Needs Approval",
+      "required section: Tomorrow",
+      "required section: Evidence Quality",
+      "section pattern present (Blocked): block|unknown|none",
+      "section pattern present (Needs Approval): approval|none",
+      "section pattern present (Tomorrow): 1\\.|priority|next",
+      "forbidden pattern absent: \\bwe deployed\\b",
+      "forbidden pattern absent: \\bdeployment completed\\b",
+      "forbidden pattern absent: \\bwe published\\b",
+      "forbidden pattern absent: \\bpublication completed\\b",
+      "forbidden pattern absent: \\bwe sent payment\\b",
+      "forbidden pattern absent: \\bapproved by Marco\\b",
+      "required pattern present: verif|evidence",
+      "evidence language present",
+      "input tokens: 1811/12000",
+      "output tokens: 821/1600",
+      "total tokens: 4424/18000",
+      "cost USD: 0.0004884376000000001/0.1"
+    ],
+    "failures": [
+      "section pattern missing (Needs Approval): approval|none"
+    ]
+  },
+  "promotion": {
+    "eligible": false,
+    "human_review_required": true
+  }
+}

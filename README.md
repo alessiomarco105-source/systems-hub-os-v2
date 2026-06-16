@@ -55,6 +55,8 @@ hub run cos-business-executive-brief --input "Focus on launch decisions" --revie
 hub review latest cos-business-executive-brief
 hub costs --days 30
 hub tokens --days 7 --limit 10
+hub jobs
+hub job weekly-business-review --dry-run
 hub tui
 ```
 
@@ -62,4 +64,4 @@ Do not launch raw `pi` inside company or project repositories. `hub` preserves m
 
 Use raw `pi` only for manual, explicitly bounded exploration. Project-local `pi-context-tools` is installed for manual sessions so an agent can inspect context usage and compact long sessions, but `hub` intentionally disables Pi extensions during governed task runs.
 
-`hub tui` opens the terminal interface for running tasks, reviewing latest outputs, checking token usage, opening run outputs and receipts, seeing the recommended next action, and validating manifests without memorizing every command. It can read the selected project-local Pi theme from `.pi/settings.json` for visual styling, but it does not load Pi extensions or grant new runtime powers. Use arrow keys or `j`/`k` to move, number keys to jump (`0` selects item 10), Enter to open an action, `r` to refresh, and `q` to quit.
+`hub tui` opens the terminal interface for routing to agents, running tasks, reviewing latest outputs, checking token usage, opening run outputs and receipts, seeing the recommended next action, and validating manifests without memorizing every command. It can read the selected project-local Pi theme from `.pi/settings.json` for visual styling, but it does not load Pi extensions or grant new runtime powers. Use arrow keys or `j`/`k` to move, number keys to jump (`0` selects item 10), Enter to open an action, `r` to refresh, and `q` to quit.

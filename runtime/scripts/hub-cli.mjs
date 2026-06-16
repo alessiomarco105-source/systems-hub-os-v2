@@ -19,6 +19,7 @@ const repoRoot = resolve(dirname(scriptPath), "../..");
 const taskDir = resolve(repoRoot, "operations/tasks");
 const usageDir = resolve(repoRoot, "operations/runs/usage");
 const taskRunner = resolve(repoRoot, "runtime/scripts/run-task-manifest.mjs");
+const jobRunner = resolve(repoRoot, "runtime/scripts/run-job.mjs");
 const dynamicPrefix = ".hub-runtime-";
 
 function fail(message, exitCode = 1) {
@@ -36,6 +37,8 @@ Usage:
   hub costs [--days N]
   hub tokens [--days N] [--limit N]
   hub tui
+  hub jobs
+  hub job <job-id> [--dry-run] [--notify]
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -60,7 +63,7 @@ function parseFlags(args, allowed, booleanFlags = new Set(["review"])) {
     const name = value.slice(2);
     if (!allowed.has(name)) fail(`unsupported option: --${name}`);
     if (booleanFlags.has(name)) {
-      options.review = true;
+      options[name] = true;
       continue;
     }
     const next = args[index + 1];
@@ -86,6 +89,46 @@ async function taskManifests() {
     manifests.push({ path, name: entry.name, manifest });
   }
   return manifests.sort((a, b) => a.manifest.task_id.localeCompare(b.manifest.task_id));
+}
+
+async function agentRegistry() {
+  const path = resolve(repoRoot, "agents/registry.yaml");
+  const text = await readFile(path, "utf8");
+  const agents = [];
+  let current;
+  for (const line of text.split(/\r?\n/)) {
+    const agentStart = /^\s*-\s+id:\s+(.+?)\s*$/.exec(line);
+    if (agentStart) {
+      if (current) agents.push(current);
+      current = { id: agentStart[1] };
+      continue;
+    }
+    if (!current) continue;
+    const field = /^\s{4}([a-z0-9_]+):\s+(.+?)\s*$/.exec(line);
+    if (field) current[field[1]] = field[2];
+  }
+  if (current) agents.push(current);
+  return agents;
+}
+
+async function jobRegistry() {
+  const path = resolve(repoRoot, "operations/jobs/registry.yaml");
+  const text = await readFile(path, "utf8");
+  const jobs = [];
+  let current;
+  for (const line of text.split(/\r?\n/)) {
+    const jobStart = /^\s*-\s+id:\s+(.+?)\s*$/.exec(line);
+    if (jobStart) {
+      if (current) jobs.push(current);
+      current = { id: jobStart[1] };
+      continue;
+    }
+    if (!current) continue;
+    const field = /^\s{4}([a-z0-9_]+):\s+(.+?)\s*$/.exec(line);
+    if (field) current[field[1]] = field[2];
+  }
+  if (current) jobs.push(current);
+  return jobs;
 }
 
 async function resolveTask(taskId, { standardOnly = false } = {}) {
@@ -300,6 +343,27 @@ async function commandValidate(args) {
     ]);
     if (code !== 0) fail(`validation failed: ${task.manifest.task_id}`, code);
   }
+}
+
+async function commandJobs() {
+  const jobs = await jobRegistry();
+  console.log("JOB ID                         OWNER                       V2 EXECUTION                 STATUS");
+  for (const job of jobs) {
+    console.log(
+      `${job.id.padEnd(30)} ${String(job.owner || "unknown").padEnd(27)} ` +
+      `${String(job.v2_execution || "unknown").padEnd(28)} ${job.status || "unknown"}`
+    );
+  }
+}
+
+async function commandJob(args) {
+  const { options, positional } = parseFlags(args, new Set(["dry-run", "notify"]), new Set(["dry-run", "notify"]));
+  if (positional.length !== 1) fail("usage: hub job <job-id> [--dry-run] [--notify]");
+  const runnerArgs = [jobRunner, positional[0]];
+  if (options["dry-run"]) runnerArgs.push("--dry-run");
+  if (options.notify) runnerArgs.push("--notify");
+  const code = await spawnInherited(process.execPath, runnerArgs);
+  if (code !== 0) fail(`job failed: ${positional[0]}`, code);
 }
 
 async function commandRun(args) {
@@ -883,6 +947,8 @@ async function tuiRecentReceipts(rl) {
 const tuiItems = [
   { key: "dashboard", label: "Dashboard" },
   { key: "next", label: "Next Action" },
+  { key: "router", label: "Agent Router" },
+  { key: "agents", label: "Agents" },
   { key: "run", label: "Run Task" },
   { key: "review", label: "Review Latest" },
   { key: "tokens", label: "Token Audit" },
@@ -895,6 +961,7 @@ const tuiItems = [
 
 async function dashboardState() {
   const tasks = await taskManifests();
+  const agents = await agentRegistry();
   const allReceipts = await receipts();
   const total = await tokenSummary(7);
   const last = allReceipts[0]?.receipt;
@@ -909,7 +976,7 @@ async function dashboardState() {
   } catch {
     // Dashboard only.
   }
-  return { tasks, receipts: allReceipts, total, last, branch, commit, dirty, theme };
+  return { tasks, agents, receipts: allReceipts, total, last, branch, commit, dirty, theme };
 }
 
 function renderLogo(width, state) {
@@ -960,6 +1027,7 @@ function renderDashboardView(state, width) {
     `Git: ${state.branch}@${state.commit}`,
     `Dirty: ${state.dirty}`,
     `Tasks: ${state.tasks.length}`,
+    `Agents: ${state.agents.length}`,
     `Receipts: ${state.receipts.length}`,
     "Write mode: disabled"
   ], cardWidth);
@@ -1087,6 +1155,48 @@ function renderNextActionView(state, width) {
   ];
 }
 
+function renderRouterView(width) {
+  return [
+    ...box("Agent Router", [
+      "Default first contact: harness-orchestrator",
+      "Use it when the owner is unclear or work spans agents.",
+      "It routes scope, context, evidence, and approval needs.",
+      "It does not approve, publish, deploy, pay, or commit."
+    ], Math.min(width, 96)),
+    "",
+    ...box("Common Routing", [
+      "Business, finance, priorities: chief-of-staff-business",
+      "Product/code: traders-hub-engineer + cto",
+      "Security/privacy/leaks: security-officer",
+      "Marketing/content/social: cmo + content-producer",
+      "UX/product design: designer",
+      "Beta feedback: customer-experience",
+      "Prospects/outreach: sales-specialist",
+      "Research/competitors: scout"
+    ], Math.min(width, 96)),
+    "",
+    color("Next build: let this screen create a governed task envelope for the selected agent.", ansi.muted || ansi.dim)
+  ];
+}
+
+function renderAgentsView(state, width) {
+  const lines = [
+    "AGENT                         SCOPE                         REPORTS TO",
+    divider(Math.min(width, 84))
+  ];
+  for (const agent of state.agents) {
+    const owner = agent.id === "harness-orchestrator"
+      ? color(fit(agent.id, 29), ansi.accentBright)
+      : color(fit(agent.id, 29), ansi.text);
+    lines.push(
+      `${owner} ${fit(agent.scope || "unknown", 29)} ${agent.reports_to || "unknown"}`
+    );
+  }
+  lines.push("");
+  lines.push(color("Use Agent Router when you want the system to choose the owner first.", ansi.muted || ansi.dim));
+  return lines;
+}
+
 function renderTasksView(state, width) {
   const lines = [
     "TASK                              KIND      STATE    MODEL",
@@ -1177,6 +1287,8 @@ async function renderTui(selectedIndex) {
   let content;
   if (selected.key === "dashboard") content = renderDashboardView(state, contentWidth);
   else if (selected.key === "next") content = renderNextActionView(state, contentWidth);
+  else if (selected.key === "router") content = renderRouterView(contentWidth);
+  else if (selected.key === "agents") content = renderAgentsView(state, contentWidth);
   else if (selected.key === "tasks") content = renderTasksView(state, contentWidth);
   else if (selected.key === "receipts") content = renderReceiptsView(state, contentWidth);
   else if (selected.key === "output") content = await renderOutputView(state, contentWidth);
@@ -1311,6 +1423,13 @@ async function main() {
       break;
     case "tui":
       await commandTui(args);
+      break;
+    case "jobs":
+      if (args.length) fail("usage: hub jobs");
+      await commandJobs();
+      break;
+    case "job":
+      await commandJob(args);
       break;
     case "run":
       await commandRun(args);
