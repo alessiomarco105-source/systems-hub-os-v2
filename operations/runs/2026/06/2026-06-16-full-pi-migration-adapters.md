@@ -47,3 +47,16 @@ Fix applied:
 - boolean flags now set their own option key;
 - job registry parsing now supports keys containing digits, such as `v2_execution`;
 - dry-run was re-tested successfully.
+
+## Incident During First Notify Test
+
+The first approved `weekly-business-review --notify` test succeeded and sent Telegram, but a second weekly-business-review receipt appeared. Root cause: the earlier interrupted `weekly-business-review` child process from the dry-run parser bug continued running after `Ctrl+C` and finished later.
+
+Audit receipts retained:
+
+- approved notify run: `operations/runs/usage/2026/06/2026-06-16T09-22-46-386Z-weekly-business-review.json`
+- orphaned interrupted run: `operations/runs/usage/2026/06/2026-06-16T09-22-54-228Z-weekly-business-review.json`
+
+Fix applied:
+
+- `run-job.mjs` now forwards `SIGINT` and `SIGTERM` to the active child process and returns code `130` for interrupted runs.

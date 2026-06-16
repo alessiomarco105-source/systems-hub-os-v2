@@ -52,10 +52,30 @@ function spawnCapture(command, args) {
     const child = spawn(command, args, { cwd: repoRoot, env: process.env });
     let stdout = "";
     let stderr = "";
+    let interrupted = false;
+    const cleanup = () => {
+      process.off("SIGINT", onSignal);
+      process.off("SIGTERM", onSignal);
+    };
+    const onSignal = signal => {
+      interrupted = true;
+      child.kill(signal);
+      setTimeout(() => {
+        if (!child.killed) child.kill("SIGKILL");
+      }, 3000).unref();
+    };
+    process.once("SIGINT", onSignal);
+    process.once("SIGTERM", onSignal);
     child.stdout.on("data", chunk => { stdout += chunk; });
     child.stderr.on("data", chunk => { stderr += chunk; });
-    child.on("error", rejectPromise);
-    child.on("close", code => resolvePromise({ code: code ?? 1, stdout, stderr }));
+    child.on("error", error => {
+      cleanup();
+      rejectPromise(error);
+    });
+    child.on("close", code => {
+      cleanup();
+      resolvePromise({ code: interrupted ? 130 : (code ?? 1), stdout, stderr });
+    });
   });
 }
 

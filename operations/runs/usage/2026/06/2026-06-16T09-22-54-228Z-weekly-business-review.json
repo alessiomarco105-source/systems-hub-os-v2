@@ -1,0 +1,90 @@
+{
+  "schema": "systems_hub.run_receipt/v1",
+  "run_id": "2026-06-16T09-22-54-228Z-weekly-business-review",
+  "task_id": "weekly-business-review",
+  "task_kind": "standard",
+  "started_at": "2026-06-16T09:20:45.033Z",
+  "finished_at": "2026-06-16T09:22:54.228Z",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "contract": {
+    "manifest_sha256": "f2963f0ba7355049c5fe3e5a792823db7050fcc1903fa9e68753c85549d89cdd",
+    "prompt_sha256": "af000e40aca48ecdc6f51965e6d22f65363a877b20038e5dc8025a72a7af75f7",
+    "ephemeral_manifest": false,
+    "manifest_path": "operations/runs/usage/2026/06/2026-06-16T09-22-54-228Z-weekly-business-review.manifest.json"
+  },
+  "context": {
+    "files": [
+      "agents/roles/chief-of-staff-business.md",
+      "operations/jobs/weekly-business-review.md",
+      "company/strategy/overview.md",
+      "company/strategy/current-priorities.md",
+      "company/okrs/2026-q2.md",
+      "company/portfolio/status.md",
+      "company/operations/risk-register.md",
+      "operations/decisions/log.md",
+      "projects/traders-hub/reports/current-status.md",
+      "projects/traders-hub/reports/launch-scoreboard.md"
+    ],
+    "file_count": 10,
+    "total_bytes": 13339
+  },
+  "usage": {
+    "input": 194,
+    "output": 3554,
+    "cache_read": 6528,
+    "cache_write": 0,
+    "total_tokens": 10276,
+    "cost_usd": 0.0032000340000000005
+  },
+  "output": {
+    "path": "operations/runs/usage/2026/06/2026-06-16T09-22-54-228Z-weekly-business-review.md",
+    "sha256": "60fb718175da83b362a014b566e9b0c83a55c5f9d6ba5b1c39d08475e97899bd",
+    "word_count": 891
+  },
+  "validation": {
+    "status": "pass",
+    "checks": [
+      "output words: 891/950",
+      "output starts with: ## Scoreboard",
+      "required section: Scoreboard",
+      "required section: Project Status",
+      "required section: What Moved",
+      "required section: What Is Stuck",
+      "required section: Top Three Priorities",
+      "required section: Decisions Needed",
+      "required section: Evidence Quality",
+      "section pattern present (Top Three Priorities): launch-proof gaps",
+      "section pattern present (Top Three Priorities): decision-grade business evidence",
+      "section pattern present (Top Three Priorities): measured distribution",
+      "section pattern present (Decisions Needed): Option 1:",
+      "section pattern present (Decisions Needed): Option 2:",
+      "section pattern present (Decisions Needed): - What it does:",
+      "section pattern present (Decisions Needed): - Trade-off:",
+      "section pattern present (Decisions Needed): → Recommendation:",
+      "forbidden pattern absent: \\bSystems Hub(?: LLC)? is (?:currently )?a single[- ]product company\\b",
+      "forbidden pattern absent: \\blaunch is complete\\b",
+      "forbidden pattern absent: \\bprofitable trading\\b",
+      "forbidden pattern absent: ^Now I",
+      "forbidden pattern absent: ^Here is",
+      "forbidden pattern absent: \\b(?:this|that) is the only path\\b",
+      "forbidden pattern absent: \\bzero verified active beta testers\\b",
+      "forbidden pattern absent: \\bStripe\\b",
+      "forbidden pattern absent: \\b(?:[0-9]+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\\s+(?:open\\s+)?launch-proof gaps\\b",
+      "forbidden pattern absent: \\brisk-accept and proceed\\b",
+      "forbidden pattern absent: \\bdefer RLS\\b",
+      "required pattern present: Trader's Hub",
+      "required pattern present: unknown|evidence",
+      "evidence language present",
+      "input tokens: 194/18000",
+      "output tokens: 3554/6000",
+      "total tokens: 10276/32000",
+      "cost USD: 0.0032000340000000005/0.25"
+    ],
+    "failures": []
+  },
+  "promotion": {
+    "eligible": true,
+    "human_review_required": true
+  }
+}
