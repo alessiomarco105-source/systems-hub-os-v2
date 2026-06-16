@@ -45,6 +45,7 @@ Usage:
   hub telegram health [--verbose]
   hub telegram router [--dry-run] [--limit N] [--create-envelope]
   hub telegram envelopes
+  hub telegram envelope <envelope-id>
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -401,7 +402,12 @@ async function commandTelegram(args) {
     await commandTelegramEnvelopes();
     return;
   }
-  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N] [--create-envelope] | hub telegram envelopes");
+  if (command === "envelope") {
+    if (rest.length !== 1) fail("usage: hub telegram envelope <envelope-id>");
+    await commandTelegramEnvelope(rest[0]);
+    return;
+  }
+  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N] [--create-envelope] | hub telegram envelopes | hub telegram envelope <envelope-id>");
 }
 
 async function commandTelegramEnvelopes() {
@@ -431,6 +437,44 @@ async function commandTelegramEnvelopes() {
       `${relative(repoRoot, path)}`
     );
   }
+}
+
+function envelopePath(id) {
+  const safeId = id.endsWith(".json") ? id : `${id}.json`;
+  if (!/^[a-zA-Z0-9_.:-]+$/.test(safeId)) fail("invalid envelope id");
+  const path = resolve(telegramApprovalDir, safeId);
+  if (!path.startsWith(`${telegramApprovalDir}${sep}`)) fail("invalid envelope path");
+  return path;
+}
+
+async function commandTelegramEnvelope(id) {
+  const path = envelopePath(id);
+  let envelope;
+  try {
+    envelope = await readJson(path);
+  } catch {
+    fail(`unknown Telegram envelope: ${id}`);
+  }
+  console.log(`Envelope: ${basename(path)}`);
+  console.log(`Status: ${envelope.status || "unknown"}`);
+  console.log(`Agent: ${envelope.route?.proposed_agent || "unknown"}`);
+  console.log(`Created: ${envelope.created_at || "unknown"}`);
+  console.log(`Source: ${envelope.source?.bot || "unknown"} message ${envelope.source?.message_id || "unknown"}`);
+  console.log("");
+  console.log("Request:");
+  console.log(envelope.request?.text || "(empty)");
+  console.log("");
+  console.log("Permissions:");
+  const permissions = envelope.permissions || {};
+  for (const [key, value] of Object.entries(permissions)) {
+    console.log(`- ${key}: ${value}`);
+  }
+  console.log("");
+  console.log("Approval:");
+  console.log(envelope.approval?.syntax || "approval syntax missing");
+  console.log("");
+  console.log("Next:");
+  console.log("- Capture is complete. Agent execution still requires a separate approved command.");
 }
 
 async function commandRun(args) {

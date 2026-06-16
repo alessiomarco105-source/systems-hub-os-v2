@@ -16,6 +16,7 @@ Use:
 ```bash
 hub telegram router --limit 5 --create-envelope
 hub telegram envelopes
+hub telegram envelope <envelope-id>
 ```
 
 Running the routed agent requires a separate Marco approval.

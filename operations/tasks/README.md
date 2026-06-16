@@ -76,6 +76,7 @@ Available commands:
 | `hub telegram router --dry-run` | Verify the inbound bot router without reading updates |
 | `hub telegram router --limit 5 --create-envelope` | Capture recent inbound messages as pending local approval envelopes |
 | `hub telegram envelopes` | List captured Telegram approval envelopes |
+| `hub telegram envelope <id>` | Inspect one captured envelope and its approval boundary |
 | `hub tui` | Open the interactive terminal interface |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 
