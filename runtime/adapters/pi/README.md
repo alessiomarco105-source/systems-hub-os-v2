@@ -1,5 +1,9 @@
 # Pi Adapter
 
+Use `terminal-guide.md` for Marco-facing terminal usage.
+
+Systems Hub prefers the `hub` CLI for governed Pi/DeepSeek work. Raw `pi` remains available for manual experiments, but it does not automatically enforce Systems Hub task manifests, receipts, or approval boundaries.
+
 Status: installed, provider connection verified, restricted pilot operational; production adapter not configured.
 
 Installed version: `0.79.4`

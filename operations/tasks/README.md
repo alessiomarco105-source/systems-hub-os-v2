@@ -94,6 +94,9 @@ Available commands:
 | `hub finance month YYYY-MM` | List booked ledger entries for one month |
 | `hub finance totals --month YYYY-MM` | Summarize revenue, expenses, and net by currency and lane |
 | `hub finance export --month YYYY-MM --format csv` | Export one month of booked ledger entries to local CSV |
+| `hub loop` | Print the active Agent Loop v2 standard |
+| `hub loop-check <receipt.json>` | Inspect a run receipt against mechanical Agent Loop v2 evidence |
+| `hub pi-guide` | Print the Pi/DeepSeek terminal usage guide |
 
 Dynamic input:
 

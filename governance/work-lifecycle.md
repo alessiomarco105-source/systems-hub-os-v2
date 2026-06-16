@@ -18,3 +18,9 @@ updated: 2026-06-15
 8. **Receipt:** record result, evidence, usage, blockers, and next action.
 
 Low-risk work may combine review stages. High-risk work must preserve independent worker, reviewer, adversarial reviewer, approver, and promoter boundaries.
+
+## Active Agent Loop
+
+The operational implementation of this lifecycle is `operations/loops/agent-loop-v2.md`.
+
+Agents should use the v2 loop for meaningful work, especially tasks that require persistence, reusable learning, or cross-agent coordination.

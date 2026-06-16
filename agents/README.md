@@ -13,3 +13,9 @@ An agent role defines:
 - review requirements.
 
 Model names do not belong in canonical role definitions unless a capability requirement makes one necessary.
+
+## Operating Loop
+
+All active agents follow `operations/loops/agent-loop-v2.md` for meaningful work.
+
+The loop requires intake, context planning, expertise pass, execution, self-review, promotion gates, receipts, and reusable learning capture. Low-risk work may compress the loop; high-risk or protected work may not.

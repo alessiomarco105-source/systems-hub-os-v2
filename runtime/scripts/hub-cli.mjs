@@ -62,6 +62,9 @@ Usage:
   hub finance month YYYY-MM
   hub finance totals --month YYYY-MM
   hub finance export --month YYYY-MM --format csv
+  hub loop
+  hub loop-check <receipt.json>
+  hub pi-guide
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -365,6 +368,76 @@ async function commandValidate(args) {
       relative(repoRoot, task.path)
     ]);
     if (code !== 0) fail(`validation failed: ${task.manifest.task_id}`, code);
+  }
+}
+
+function safeReceiptPath(input) {
+  const path = resolve(repoRoot, input);
+  if (!path.startsWith(`${repoRoot}${sep}`)) fail("receipt path escapes repository");
+  if (!path.endsWith(".json")) fail("receipt must be a JSON file");
+  return path;
+}
+
+async function commandLoopCheck(args) {
+  if (args.length !== 1) fail("usage: hub loop-check <receipt.json>");
+  const path = safeReceiptPath(args[0]);
+  let receipt;
+  try {
+    receipt = await readJson(path);
+  } catch {
+    fail(`cannot read receipt: ${args[0]}`);
+  }
+  if (receipt.schema !== "systems_hub.run_receipt/v1") fail("not a Systems Hub run receipt");
+  const checks = [];
+  const warnings = [];
+  const failures = [];
+
+  function ok(condition, label, warning = false) {
+    if (condition) checks.push(label);
+    else if (warning) warnings.push(label);
+    else failures.push(label);
+  }
+
+  ok(Boolean(receipt.task_id), "receipt has task id");
+  ok(Boolean(receipt.context?.files?.length), "context files recorded");
+  ok(Number(receipt.context?.file_count || 0) === (receipt.context?.files?.length || 0), "context file count matches", true);
+  ok(Boolean(receipt.output?.path && receipt.output?.sha256), "output path and hash recorded");
+  ok(receipt.validation?.status === "pass", "deterministic validation passed");
+  ok(Boolean(receipt.usage?.total_tokens), "token usage recorded");
+  ok(Boolean(receipt.usage?.cost_usd !== undefined), "cost recorded");
+  ok(receipt.promotion?.human_review_required === true, "human review gate preserved");
+
+  const manifestPath = receipt.contract?.manifest_path;
+  if (manifestPath) {
+    const manifest = await readJson(resolve(repoRoot, manifestPath));
+    const highRisk = [
+      "security-exposure-review",
+      "weekly-business-review"
+    ].includes(receipt.task_id) ||
+      manifest.context?.allowed_data_classes?.some(dataClass => ["private", "protected"].includes(dataClass));
+    ok(Boolean(manifest.role), "manifest snapshot has role");
+    ok(Boolean(manifest.context?.allowed_files?.length), "manifest snapshot has allowlist");
+    ok(manifest.permissions?.write === false, "manifest keeps write disabled");
+    ok(manifest.permissions?.external_actions === false, "manifest keeps external actions disabled");
+    if (highRisk && receipt.task_kind !== "review") {
+      warnings.push("high-risk/decision-grade output should receive independent review before promotion");
+    }
+  } else {
+    warnings.push("manifest snapshot path missing");
+  }
+
+  console.log(`Agent Loop v2 check: ${relative(repoRoot, path)}`);
+  console.log(`Task: ${receipt.task_id}`);
+  console.log(`Validation: ${receipt.validation?.status || "unknown"}`);
+  console.log("");
+  console.log("CHECKS");
+  for (const check of checks) console.log(`- pass: ${check}`);
+  for (const warning of warnings) console.log(`- warn: ${warning}`);
+  for (const failure of failures) console.log(`- fail: ${failure}`);
+  console.log("");
+  console.log(`Verdict: ${failures.length ? "fail" : warnings.length ? "pass-with-warnings" : "pass"}`);
+  if (warnings.length) {
+    console.log("Next: resolve warnings before promotion when the output is decision-grade or protected.");
   }
 }
 
@@ -1226,6 +1299,19 @@ async function commandFinance(args) {
     return;
   }
   fail("usage: hub finance status | hub finance drafts | hub finance draft <draft-id> | hub finance promote <draft-id> --approved | hub finance confirm <draft-id> [--send] | hub finance month YYYY-MM | hub finance totals --month YYYY-MM | hub finance export --month YYYY-MM --format csv");
+}
+
+async function printMarkdownGuide(relativePath, fallbackTitle) {
+  const path = resolve(repoRoot, relativePath);
+  try {
+    const text = await readFile(path, "utf8");
+    const body = text.startsWith("---")
+      ? text.split("---").slice(2).join("---").trim()
+      : text.trim();
+    console.log(body || fallbackTitle);
+  } catch {
+    fail(`missing guide: ${relativePath}`);
+  }
 }
 
 function currentLedgerPath(date = new Date()) {
@@ -2476,6 +2562,17 @@ async function main() {
       break;
     case "finance":
       await commandFinance(args);
+      break;
+    case "loop":
+      if (args.length) fail("usage: hub loop");
+      await printMarkdownGuide("operations/loops/agent-loop-v2.md", "Agent Loop v2");
+      break;
+    case "loop-check":
+      await commandLoopCheck(args);
+      break;
+    case "pi-guide":
+      if (args.length) fail("usage: hub pi-guide");
+      await printMarkdownGuide("runtime/adapters/pi/terminal-guide.md", "Pi Terminal Guide");
       break;
     case "run":
       await commandRun(args);
