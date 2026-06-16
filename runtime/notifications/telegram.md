@@ -18,13 +18,14 @@ Interactive router scaffold: `runtime/scripts/telegram-router.mjs`
 | operations | Systems Hub operations bot | Daily recaps, weekly reviews, agent operations alerts | `SYSTEMS_HUB_TELEGRAM_OPERATIONS_BOT_TOKEN` or Keychain `systems-hub-telegram-operations-bot-token` | `SYSTEMS_HUB_TELEGRAM_OPERATIONS_CHAT_ID` or Keychain `systems-hub-telegram-operations-chat-id` |
 | social | Systems Hub social KPI bot | Social media performance reports and content KPI alerts | `SYSTEMS_HUB_TELEGRAM_SOCIAL_BOT_TOKEN` or Keychain `systems-hub-telegram-social-bot-token` | `SYSTEMS_HUB_TELEGRAM_SOCIAL_CHAT_ID` or Keychain `systems-hub-telegram-social-chat-id` |
 | signup | `Trader'sHub_alerts_bot` | Trader's Hub beta/signup alerts that require Marco review | `SYSTEMS_HUB_TELEGRAM_SIGNUP_BOT_TOKEN` or Keychain `systems-hub-telegram-signup-bot-token` | `SYSTEMS_HUB_TELEGRAM_SIGNUP_CHAT_ID` or Keychain `systems-hub-telegram-signup-chat-id` |
+| interactive | `@Systemshub_bot` | Inbound owner messages routed into governed agent task envelopes | `SYSTEMS_HUB_TELEGRAM_INTERACTIVE_BOT_TOKEN` or Keychain `systems-hub-telegram-interactive-bot-token` | `SYSTEMS_HUB_TELEGRAM_INTERACTIVE_CHAT_ID` or Keychain `systems-hub-telegram-interactive-chat-id` |
 
 ## Current Credential Status
 
 - `operations`: configured in the v2 Keychain and tested.
 - `social`: configured in the v2 Keychain and tested.
 - `signup`: configured in the v2 Keychain. This channel maps to `Trader'sHub_alerts_bot`.
-- `interactive`: scaffolded for inbound routing, but credentials and execution workflow are not activated yet.
+- `interactive`: configured in the v2 Keychain. Read/routing check passed with a test message routed to `harness-orchestrator`; task-envelope execution is not activated yet.
 
 ## Safety
 
