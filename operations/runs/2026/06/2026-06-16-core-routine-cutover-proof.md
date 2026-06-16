@@ -41,10 +41,14 @@ The following failures were used for manifest calibration and should not be trea
 
 ## Remaining Proof
 
-GitHub Actions manual dispatch must pass for:
+GitHub Actions manual dispatch passed for:
 
-- `weekly-business-review`
-- `social-kpi-report`
-- `security-exposure-review`
+- `weekly-business-review`: run `27633512843`
+- `social-kpi-report`: run `27633512776`
+- `security-exposure-review`: run `27633512810`
+
+Prior GitHub Actions manual dispatch proof:
+
+- `daily-agent-recap`: run `27621139099`
 
 Scheduled proof remains pending until each cron fires naturally.

@@ -95,9 +95,18 @@ It does not:
 As of 2026-06-16:
 
 - `daily-agent-recap`: GitHub Actions manual dispatch passed.
-- `weekly-business-review`: local v2 run and Telegram delivery passed; GitHub Actions manual dispatch pending.
-- `social-kpi-report`: local v2 run and Telegram delivery passed; GitHub Actions manual dispatch pending.
-- `security-exposure-review`: local v2 run and Telegram delivery passed with provider access approval; GitHub Actions manual dispatch pending.
+- `weekly-business-review`: local v2 run, Telegram delivery, and GitHub Actions manual dispatch passed.
+- `social-kpi-report`: local v2 run, Telegram delivery, and GitHub Actions manual dispatch passed.
+- `security-exposure-review`: local v2 run, Telegram delivery, and GitHub Actions manual dispatch passed with provider access approval.
+
+Manual dispatch run ids:
+
+- `daily-agent-recap`: `27621139099`
+- `weekly-business-review`: `27633512843`
+- `social-kpi-report`: `27633512776`
+- `security-exposure-review`: `27633512810`
+
+Natural scheduled proof remains pending until each cron fires.
 
 ## Schedule Activation Order
 

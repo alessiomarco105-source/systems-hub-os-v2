@@ -12,7 +12,7 @@ jobs:
     timezone: America/New_York
     notify_channel: operations
     v2_execution: cloud-schedule-active
-    status: migration-in-progress
+    status: active-awaiting-scheduled-proof
   - id: daily-agent-recap
     definition: daily-agent-recap.md
     task_manifest: ../tasks/daily-agent-recap.json
@@ -22,7 +22,7 @@ jobs:
     timezone: America/New_York
     notify_channel: operations
     v2_execution: cloud-schedule-active
-    status: migration-in-progress
+    status: active-awaiting-scheduled-proof
   - id: security-exposure-review
     definition: security-exposure-review.md
     task_manifest: ../tasks/security-exposure-review.json
@@ -32,7 +32,7 @@ jobs:
     timezone: America/New_York
     notify_channel: operations
     v2_execution: cloud-schedule-active
-    status: migration-in-progress
+    status: active-awaiting-scheduled-proof
   - id: social-kpi-report
     definition: social-kpi-report.md
     task_manifest: ../tasks/social-kpi-report.json
@@ -42,4 +42,4 @@ jobs:
     timezone: America/New_York
     notify_channel: social
     v2_execution: cloud-schedule-active
-    status: migration-in-progress
+    status: active-awaiting-scheduled-proof

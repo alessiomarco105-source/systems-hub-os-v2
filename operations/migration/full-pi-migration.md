@@ -41,6 +41,7 @@ Pi plus an LLM is not enough for unattended operations. A complete system still 
 | Scheduler activation | core routine schedules active in GitHub Actions |
 | Codex automation retirement | no local Codex automation files found in this workspace; monitor sidebar/manual state |
 | Cloud/always-on runner | GitHub Actions active for core routines |
+| Cloud manual dispatch proof | passed for all core routines |
 
 ## Core Routine Local Proof
 
@@ -52,6 +53,19 @@ As of 2026-06-16, local v2 model execution and Telegram delivery have passed for
 - `security-exposure-review`
 
 See `operations/runs/2026/06/2026-06-16-core-routine-cutover-proof.md`.
+
+## Cloud Manual Proof
+
+As of 2026-06-16, GitHub Actions manual dispatch has passed for all core routines:
+
+- `daily-agent-recap`: `27621139099`
+- `weekly-business-review`: `27633512843`
+- `social-kpi-report`: `27633512776`
+- `security-exposure-review`: `27633512810`
+
+## Passive Verification Remaining
+
+Natural scheduled proof remains pending until the cron schedules fire. No additional build work is required for that proof; monitor GitHub Actions and Telegram delivery after each scheduled time.
 
 ## Cutover Rule
 
