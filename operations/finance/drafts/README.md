@@ -19,3 +19,15 @@ Not allowed here:
 - passwords, API keys, or secrets;
 - full customer personal records;
 - final tax conclusions.
+
+## Promotion
+
+Approved drafts can be promoted with:
+
+```bash
+hub finance promote <draft-id> --approved
+```
+
+Promotion writes to `operations/finance/ledger/YYYY/MM.jsonl`.
+
+Drafts with review notes or low confidence are intentionally refused until corrected.

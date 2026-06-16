@@ -87,6 +87,7 @@ Available commands:
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 | `hub finance drafts` | List draft finance captures |
 | `hub finance draft <id>` | Inspect a draft finance capture and its promotion boundary |
+| `hub finance promote <id> --approved` | Promote an approved draft into the internal monthly finance ledger |
 
 Dynamic input:
 

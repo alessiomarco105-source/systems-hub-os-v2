@@ -14,3 +14,6 @@ runtime/state/
 runtime/secrets/
 operations/runs/raw/
 operations/tasks/.hub-runtime-*.json
+operations/approvals/telegram/*.json
+operations/finance/drafts/telegram/*.json
+operations/finance/ledger/**/*.jsonl

@@ -5,6 +5,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { emitKeypressEvents } from "node:readline";
 import { createInterface } from "node:readline/promises";
 import {
+  appendFile,
   mkdir,
   readFile,
   readdir,
@@ -21,6 +22,7 @@ const taskDir = resolve(repoRoot, "operations/tasks");
 const usageDir = resolve(repoRoot, "operations/runs/usage");
 const telegramApprovalDir = resolve(repoRoot, "operations/approvals/telegram");
 const financeDraftDir = resolve(repoRoot, "operations/finance/drafts/telegram");
+const financeLedgerDir = resolve(repoRoot, "operations/finance/ledger");
 const taskRunner = resolve(repoRoot, "runtime/scripts/run-task-manifest.mjs");
 const jobRunner = resolve(repoRoot, "runtime/scripts/run-job.mjs");
 const telegramHealthRunner = resolve(repoRoot, "runtime/scripts/telegram-health.mjs");
@@ -54,6 +56,7 @@ Usage:
   hub telegram reply <envelope-id> --from-output latest [--dry-run]
   hub finance drafts
   hub finance draft <draft-id>
+  hub finance promote <draft-id> --approved
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -1174,12 +1177,142 @@ async function commandFinance(args) {
     }
     console.log("");
     console.log("Controls:");
-    console.log("- Draft only: true");
-    console.log("- Ledger updated: false");
+    console.log(`- Draft only: ${draft.controls?.draft_only ?? true}`);
+    console.log(`- Ledger updated: ${draft.controls?.ledger_updated ?? false}`);
+    if (draft.ledger?.path) console.log(`- Ledger: ${draft.ledger.path}`);
+    if (draft.ledger?.entry_id) console.log(`- Entry ID: ${draft.ledger.entry_id}`);
     console.log(`- Promotion approval: ${draft.controls?.approval_syntax || "missing"}`);
     return;
   }
-  fail("usage: hub finance drafts | hub finance draft <draft-id>");
+  if (command === "promote") {
+    const { options, positional } = parseFlags(rest, new Set(["approved"]), new Set(["approved"]));
+    if (positional.length !== 1 || !options.approved) fail("usage: hub finance promote <draft-id> --approved");
+    await commandFinancePromote(positional[0]);
+    return;
+  }
+  fail("usage: hub finance drafts | hub finance draft <draft-id> | hub finance promote <draft-id> --approved");
+}
+
+function currentLedgerPath(date = new Date()) {
+  const year = String(date.getUTCFullYear());
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return resolve(financeLedgerDir, year, `${month}.jsonl`);
+}
+
+async function ledgerContainsDraft(ledgerPath, draftId) {
+  try {
+    const text = await readFile(ledgerPath, "utf8");
+    return text.split(/\r?\n/).some(line => {
+      if (!line.trim()) return false;
+      try {
+        return JSON.parse(line).source?.draft_id === draftId;
+      } catch {
+        return false;
+      }
+    });
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+async function markSourceEnvelopePromoted(draft, ledgerRelativePath) {
+  const envelopeRef = draft.source?.envelope;
+  if (!envelopeRef) return;
+  const envelopePathResolved = resolve(repoRoot, envelopeRef);
+  if (!envelopePathResolved.startsWith(`${telegramApprovalDir}${sep}`)) return;
+  let envelope;
+  try {
+    envelope = await readJson(envelopePathResolved);
+  } catch {
+    return;
+  }
+  const updated = structuredClone(envelope);
+  updated.status = "finance_draft_promoted";
+  updated.finance_promotion = {
+    status: "booked",
+    promoted_at: new Date().toISOString(),
+    draft_id: draft.id,
+    ledger: ledgerRelativePath,
+    runner: "hub finance promote"
+  };
+  await writeFile(envelopePathResolved, `${JSON.stringify(updated, null, 2)}\n`, { mode: 0o600 });
+}
+
+async function commandFinancePromote(draftId) {
+  const draftPath = financeDraftPath(draftId);
+  let draft;
+  try {
+    draft = await readJson(draftPath);
+  } catch {
+    fail(`unknown finance draft: ${draftId}`);
+  }
+  if (draft.schema !== "systems_hub.finance_draft/v1") fail(`not a finance draft: ${draftId}`);
+  if (draft.status !== "draft_pending_review") fail(`draft is not pending review: ${draft.status || "unknown"}`);
+  if (draft.controls?.ledger_updated) fail("draft already reports ledger_updated=true");
+
+  const entry = draft.entry || {};
+  if (!entry.amount || !entry.currency || !["expense", "revenue"].includes(entry.type)) {
+    fail("draft entry is incomplete; amount, currency, and expense/revenue type are required");
+  }
+  if (entry.confidence === "needs_review" || entry.review_notes?.length) {
+    fail("draft has review notes or low confidence; inspect and resolve before promotion");
+  }
+
+  const promotedAt = new Date();
+  const ledgerPath = currentLedgerPath(promotedAt);
+  const ledgerRelativePath = relative(repoRoot, ledgerPath).split(sep).join("/");
+  if (await ledgerContainsDraft(ledgerPath, draft.id)) {
+    fail(`ledger already contains draft: ${draft.id}`);
+  }
+
+  const ledgerEntry = {
+    schema: "systems_hub.finance_ledger_entry/v1",
+    id: `ledger-${promotedAt.toISOString().replace(/[:.]/g, "-")}-${draft.id}`,
+    booked_at: promotedAt.toISOString(),
+    type: entry.type,
+    amount: entry.amount,
+    currency: entry.currency,
+    category: entry.category || "uncategorized",
+    lane: entry.lane || "systems_hub_llc",
+    description: entry.description || "",
+    source: {
+      draft_id: draft.id,
+      draft_path: relative(repoRoot, draftPath).split(sep).join("/"),
+      envelope: draft.source?.envelope || null,
+      source_type: draft.source?.type || "unknown"
+    },
+    controls: {
+      approved_by: "marco",
+      approval_text: draft.controls?.approval_syntax || null,
+      promoted_by: "hub finance promote",
+      tax_treatment_reviewed: false
+    }
+  };
+
+  await mkdir(dirname(ledgerPath), { recursive: true });
+  await appendFile(ledgerPath, `${JSON.stringify(ledgerEntry)}\n`, { mode: 0o600 });
+
+  const updatedDraft = structuredClone(draft);
+  updatedDraft.status = "booked";
+  updatedDraft.booked_at = promotedAt.toISOString();
+  updatedDraft.ledger = {
+    path: ledgerRelativePath,
+    entry_id: ledgerEntry.id
+  };
+  updatedDraft.controls = {
+    ...updatedDraft.controls,
+    ledger_updated: true,
+    promoted_at: promotedAt.toISOString(),
+    promoted_by: "hub finance promote"
+  };
+  await writeFile(draftPath, `${JSON.stringify(updatedDraft, null, 2)}\n`, { mode: 0o600 });
+  await markSourceEnvelopePromoted(updatedDraft, ledgerRelativePath);
+
+  console.log(`Finance draft promoted: ${draft.id}`);
+  console.log(`Ledger: ${ledgerRelativePath}`);
+  console.log(`Entry: ${ledgerEntry.id}`);
+  console.log("Tax treatment reviewed: false");
 }
 
 function commandExists(command, args = []) {

@@ -18,12 +18,13 @@ Added a draft-safe path for COS-Business expense and revenue logging from Telegr
 - Added `hub finance draft <draft-id>`.
 - Added draft storage under `operations/finance/drafts/telegram/`.
 - Documented the promotion boundary in finance and Telegram approval docs.
+- Added `hub finance promote <draft-id> --approved` after the first approved promotion request.
 
 ## Boundary
 
-The workflow creates local draft records only. It does not update final finance books, revenue scoreboards, taxes, payments, statements, or external systems.
+The capture workflow creates local draft records only. It does not update final finance books, revenue scoreboards, taxes, payments, statements, or external systems.
 
-Final booking still requires explicit promotion approval and a reviewed accounting workflow.
+Final booking requires explicit promotion approval and writes to the internal monthly JSONL ledger. It still does not decide tax treatment.
 
 ## Review Notes
 

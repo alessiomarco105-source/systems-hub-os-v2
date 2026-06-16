@@ -7,7 +7,7 @@ Finance operations keep draft-safe capture separate from final books.
 - Telegram finance capture is draft-only.
 - Drafts live under `operations/finance/drafts/telegram/`.
 - A draft does not update accounting ledgers, tax records, financial statements, or revenue scoreboards.
-- Final booking requires a separate explicit promotion approval.
+- Final booking requires a separate explicit promotion approval and `hub finance promote <draft-id> --approved`.
 
 ## Telegram Draft Workflow
 
@@ -38,6 +38,12 @@ hub finance drafts
 hub finance draft <draft-id>
 ```
 
+6. Promote only after explicit approval:
+
+```bash
+hub finance promote <draft-id> --approved
+```
+
 ## Promotion Boundary
 
 Drafts include this approval syntax:
@@ -46,11 +52,15 @@ Drafts include this approval syntax:
 approved: promote finance draft <draft-id>
 ```
 
-That approval is not implemented as an automatic ledger write yet. Until a controlled ledger promotion command exists, COS-Business should review the draft and manually update the approved finance book through the existing accounting workflow.
+Promotion appends one JSON ledger entry under `operations/finance/ledger/YYYY/MM.jsonl`, marks the draft as `booked`, and marks the source Telegram envelope as `finance_draft_promoted`.
+
+Promotion does not decide tax treatment. Ledger entries currently set `tax_treatment_reviewed: false`.
 
 ## Control Rules
 
 - Do not infer tax treatment from a Telegram message.
 - Trading-related challenge fees are marked as `trading_edge_refinement` for review, not automatically booked as Systems Hub LLC expenses.
 - Missing amount, unclear type, or uncertain category must stay marked for review.
+- Drafts with review notes cannot be promoted until reviewed and corrected.
+- A draft cannot be promoted twice.
 - Never include secrets, card numbers, bank details, or full customer records in Telegram finance messages.
