@@ -55,7 +55,7 @@ export function keychain(service) {
 }
 
 export function credential(name, service) {
-  return process.env[name] || keychain(service);
+  return String(process.env[name] || keychain(service) || "").trim();
 }
 
 export function credentialStatus(channel) {
