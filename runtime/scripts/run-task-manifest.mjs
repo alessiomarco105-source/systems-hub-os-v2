@@ -65,7 +65,41 @@ function extractDataClass(text, path) {
   return match[1];
 }
 
-function validateManifest(manifest) {
+async function validateProviderApproval(manifest) {
+  const needsApproval = manifest.execution_status === "manual" &&
+    manifest.context.allowed_data_classes.some(dataClass => !["public", "internal"].includes(dataClass));
+  if (!needsApproval) return;
+  const approvalRelative = manifest.context.provider_approval;
+  if (!approvalRelative) fail("protected/private data classes require context.provider_approval");
+  if (!safeRelativePath(approvalRelative) ||
+      !approvalRelative.startsWith("operations/approvals/provider-access/") ||
+      !approvalRelative.endsWith(".json")) {
+    fail("context.provider_approval must be a safe JSON path under operations/approvals/provider-access");
+  }
+  const approval = JSON.parse(await readFile(resolve(repoRoot, approvalRelative), "utf8"));
+  if (approval.schema !== "systems_hub.provider_access_approval/v1") {
+    fail("provider approval has unsupported schema");
+  }
+  if (approval.status !== "approved") fail("provider approval is not approved");
+  if (approval.task_id !== manifest.task_id) fail("provider approval task_id mismatch");
+  if (approval.provider !== manifest.provider) fail("provider approval provider mismatch");
+  if (approval.model !== manifest.model) fail("provider approval model mismatch");
+  if (approval.permissions?.write !== false || approval.permissions?.external_actions !== false) {
+    fail("provider approval must preserve read-only/no-external-action permissions");
+  }
+  const approvedClasses = approval.allowed_data_classes || [];
+  for (const dataClass of manifest.context.allowed_data_classes) {
+    if (!approvedClasses.includes(dataClass)) {
+      fail(`provider approval does not include data class: ${dataClass}`);
+    }
+  }
+  const expiresAt = Date.parse(approval.expires_at || "");
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+    fail("provider approval is expired or missing expires_at");
+  }
+}
+
+async function validateManifest(manifest) {
   assertObject(manifest, "manifest");
   assertExactKeys(manifest, [
     "schema", "task_id", "task_kind", "execution_status", "role", "scope",
@@ -92,7 +126,7 @@ function validateManifest(manifest) {
 
   assertObject(manifest.context, "context");
   assertExactKeys(manifest.context, [
-    "allowed_files", "allowed_data_classes", "max_files", "max_total_bytes"
+    "allowed_files", "allowed_data_classes", "max_files", "max_total_bytes", "provider_approval"
   ], "context");
   assertStringArray(manifest.context.allowed_files, "context.allowed_files", { min: 1, unique: true });
   assertStringArray(manifest.context.allowed_data_classes, "context.allowed_data_classes", { min: 1, unique: true });
@@ -105,9 +139,9 @@ function validateManifest(manifest) {
     if (!["public", "internal", "private", "protected"].includes(dataClass)) {
       fail(`unsupported data class: ${dataClass}`);
     }
-    if (manifest.execution_status === "manual" && !["public", "internal"].includes(dataClass)) {
-      fail(`data class requires a future explicit provider approval: ${dataClass}`);
-    }
+  }
+  if ("provider_approval" in manifest.context) {
+    assertString(manifest.context.provider_approval, "context.provider_approval");
   }
 
   assertObject(manifest.permissions, "permissions");
@@ -194,6 +228,8 @@ function validateManifest(manifest) {
   } else if ("review" in manifest) {
     fail("standard tasks may not contain review configuration");
   }
+
+  await validateProviderApproval(manifest);
 }
 
 async function validateReviewSource(manifest) {
@@ -554,7 +590,7 @@ async function main() {
     prompt_sha256: createHash("sha256").update(manifest.prompt).digest("hex"),
     ephemeral_manifest: basename(manifestPath).startsWith(".hub-runtime-")
   };
-  validateManifest(manifest);
+  await validateManifest(manifest);
   const reviewSource = await validateReviewSource(manifest);
   const contextInfo = await validateContext(manifest, reviewSource);
   if (validateOnly) {

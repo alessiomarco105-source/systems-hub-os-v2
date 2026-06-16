@@ -32,7 +32,7 @@
     "max_total_tokens": 18000,
     "max_cost_usd": 0.1
   },
-  "prompt": "Produce an internal social KPI report using only supplied evidence. Begin exactly with ## Data Availability. Use exactly these H2 headings: Data Availability; Personal Trading Lane; Trader's Hub Brand Lane; Best Signal; Weakest Signal; Next Experiment; Evidence Quality. Track Instagram, X, TikTok, and YouTube, keeping personal trading and Trader's Hub separate. If screenshots, exports, or platform analytics are absent, mark numbers unknown and do not manufacture best or worst posts. Recommend one low-risk next experiment. Never claim trading profitability. Keep under 500 words.",
+  "prompt": "Produce an internal social KPI report using only supplied evidence. Your first output characters must be exactly ## Data Availability. Do not write planning text, a preamble, a readiness statement, or any text before that heading. Use exactly these H2 headings and no others: Data Availability; Personal Trading Lane; Trader's Hub Brand Lane; Best Signal; Weakest Signal; Next Experiment; Evidence Quality. Track Instagram, X, TikTok, and YouTube, keeping personal trading and Trader's Hub separate. In the Personal Trading Lane section, include the word personal. In the Next Experiment section, include the word experiment. If screenshots, exports, or platform analytics are absent, mark numbers unknown and do not manufacture best or worst posts. Recommend one low-risk next experiment. Never claim trading profitability. Keep under 500 words.",
   "output": {
     "format": "markdown",
     "max_words": 500,
@@ -51,7 +51,9 @@
     "forbidden_patterns": [
       "\\bprofitable trad(?:e|ing)\\b",
       "\\bguaranteed returns?\\b",
-      "\\bconfirmed best-performing post\\b"
+      "\\bconfirmed best-performing post\\b",
+      "^Now I",
+      "^Here is"
     ],
     "required_patterns": ["Instagram", "\\bX\\b", "TikTok", "YouTube", "unknown|missing"],
     "section_required_patterns": {

@@ -13,6 +13,8 @@ node_modules/
 runtime/state/
 runtime/secrets/
 operations/runs/raw/
+operations/runs/usage/**/*.json
+operations/runs/usage/**/*.md
 operations/tasks/.hub-runtime-*.json
 operations/approvals/telegram/*.json
 operations/finance/drafts/telegram/*.json

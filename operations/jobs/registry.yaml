@@ -11,7 +11,7 @@ jobs:
     schedule: Monday 08:00
     timezone: America/New_York
     notify_channel: operations
-    v2_execution: v2-dry-run-ready
+    v2_execution: cloud-schedule-active
     status: migration-in-progress
   - id: daily-agent-recap
     definition: daily-agent-recap.md
@@ -21,7 +21,7 @@ jobs:
     schedule: 20:00
     timezone: America/New_York
     notify_channel: operations
-    v2_execution: v2-dry-run-ready
+    v2_execution: cloud-schedule-active
     status: migration-in-progress
   - id: security-exposure-review
     definition: security-exposure-review.md
@@ -31,7 +31,7 @@ jobs:
     schedule: runner-managed
     timezone: America/New_York
     notify_channel: operations
-    v2_execution: draft-provider-approval-required
+    v2_execution: cloud-schedule-active
     status: migration-in-progress
   - id: social-kpi-report
     definition: social-kpi-report.md
@@ -41,5 +41,5 @@ jobs:
     schedule: Sunday 19:00
     timezone: America/New_York
     notify_channel: social
-    v2_execution: v2-dry-run-ready
+    v2_execution: cloud-schedule-active
     status: migration-in-progress

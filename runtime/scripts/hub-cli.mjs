@@ -1688,7 +1688,7 @@ async function commandStatus() {
     // Project-local Pi settings are optional.
   }
   console.log(`Pi context tools: ${contextTools}`);
-  console.log("Schedulers: v2 local job runner available; unattended cloud runner not selected");
+  console.log("Schedulers: GitHub Actions cloud runner active for core routines; local job runner available");
   console.log("Telegram: v2 outbound channels available; run `hub telegram health`");
   console.log("Write mode: disabled");
 }

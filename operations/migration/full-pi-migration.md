@@ -34,13 +34,24 @@ Pi plus an LLM is not enough for unattended operations. A complete system still 
 | Output validation and receipts | built |
 | Manual `hub` CLI | built |
 | TUI agent/router access | built |
-| Job registry | built, awaiting unattended schedule |
+| Job registry | built |
 | v2 job dry-run adapter | built |
 | Telegram outbound adapter | built and locally tested |
 | Telegram interactive router | scaffolded, not activated |
-| Scheduler activation | daily-agent-recap active in GitHub Actions |
-| Codex automation retirement | pending |
-| Cloud/always-on runner | plan built, pending activation approval |
+| Scheduler activation | core routine schedules active in GitHub Actions |
+| Codex automation retirement | no local Codex automation files found in this workspace; monitor sidebar/manual state |
+| Cloud/always-on runner | GitHub Actions active for core routines |
+
+## Core Routine Local Proof
+
+As of 2026-06-16, local v2 model execution and Telegram delivery have passed for:
+
+- `daily-agent-recap`
+- `weekly-business-review`
+- `social-kpi-report`
+- `security-exposure-review`
+
+See `operations/runs/2026/06/2026-06-16-core-routine-cutover-proof.md`.
 
 ## Cutover Rule
 

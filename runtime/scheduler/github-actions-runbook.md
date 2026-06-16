@@ -78,22 +78,33 @@ It:
 - uploads run receipts as artifacts;
 - sends an operations Telegram failure notification if the workflow fails.
 
-It currently has one active schedule:
+It currently has active schedules for:
 
 - `daily-agent-recap`: `0 0 * * *` UTC, which is 20:00 America/New_York during EDT.
+- `weekly-business-review`: `0 12 * * 1` UTC, which is 08:00 America/New_York during EDT.
+- `social-kpi-report`: `0 23 * * 0` UTC, which is 19:00 America/New_York during EDT.
+- `security-exposure-review`: `0 14 */3 * *` UTC, every third UTC day at 14:00; calendar-month reset accepted for v1.
 
 It does not:
 
 - commit receipts back to the repo;
-- run protected-data jobs;
 - process inbound Telegram envelopes.
+
+## Manual Proof Status
+
+As of 2026-06-16:
+
+- `daily-agent-recap`: GitHub Actions manual dispatch passed.
+- `weekly-business-review`: local v2 run and Telegram delivery passed; GitHub Actions manual dispatch pending.
+- `social-kpi-report`: local v2 run and Telegram delivery passed; GitHub Actions manual dispatch pending.
+- `security-exposure-review`: local v2 run and Telegram delivery passed with provider access approval; GitHub Actions manual dispatch pending.
 
 ## Schedule Activation Order
 
 1. `daily-agent-recap`
 2. `weekly-business-review`
 3. `social-kpi-report`
-4. `security-exposure-review` only after protected-data approval
+4. `security-exposure-review`
 
 ## Rollback
 

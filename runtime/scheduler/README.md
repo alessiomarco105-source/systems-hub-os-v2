@@ -28,7 +28,7 @@ hub job social-kpi-report --dry-run
 hub job weekly-business-review --notify
 ```
 
-Manual job execution and Telegram notification delivery are available through the v2 CLI. The first unattended cloud schedule is active for `daily-agent-recap` only.
+Manual job execution and Telegram notification delivery are available through the v2 CLI. GitHub Actions cloud schedules are active for the core v2 routine set.
 
 ## Notification Mapping
 
@@ -44,8 +44,9 @@ Each job declares its notification channel in `operations/jobs/registry.yaml`.
 | Job | Runner | Cron | Notes |
 |---|---|---:|---|
 | `daily-agent-recap` | GitHub Actions | `0 0 * * *` UTC | 20:00 America/New_York during EDT |
-
-Weekly, social KPI, and security schedules remain inactive.
+| `weekly-business-review` | GitHub Actions | `0 12 * * 1` UTC | 08:00 America/New_York during EDT |
+| `social-kpi-report` | GitHub Actions | `0 23 * * 0` UTC | 19:00 America/New_York during EDT |
+| `security-exposure-review` | GitHub Actions | `0 14 */3 * *` UTC | Every third UTC day at 14:00; calendar-month reset accepted for v1 |
 
 ## Cutover
 

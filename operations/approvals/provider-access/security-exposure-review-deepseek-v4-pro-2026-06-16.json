@@ -1,0 +1,23 @@
+{
+  "schema": "systems_hub.provider_access_approval/v1",
+  "status": "approved",
+  "approved_by": "marco",
+  "approved_at": "2026-06-16T16:30:00.000Z",
+  "expires_at": "2026-09-30T23:59:59.000Z",
+  "task_id": "security-exposure-review",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "allowed_data_classes": ["internal", "protected"],
+  "purpose": "Run non-destructive Systems Hub security exposure reviews through the restricted Pi/DeepSeek runtime.",
+  "permissions": {
+    "write": false,
+    "external_actions": false
+  },
+  "boundaries": [
+    "No secrets may be exposed in prompts or reports.",
+    "No production exploitation or third-party testing.",
+    "No credential rotation, dependency changes, auth/RLS/payment/DNS changes, deploys, posts, outreach, or payments.",
+    "Outputs must use sanitized evidence only."
+  ],
+  "approval_source": "Marco approved completion of the Systems Hub OS v2 Pi/DeepSeek migration and previously approved every-three-days security review scheduling."
+}

@@ -121,6 +121,10 @@ async function main() {
   if (result.code !== 0) process.exitCode = result.code;
 
   if (options.notify) {
+    if (result.code !== 0) {
+      process.stderr.write("notification skipped because job validation or runtime failed\n");
+      return;
+    }
     const message = summarize(job, result.stdout);
     const notify = await spawnCapture(process.execPath, [
       telegram,

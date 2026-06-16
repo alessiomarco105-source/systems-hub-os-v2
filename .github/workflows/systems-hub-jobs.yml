@@ -12,15 +12,22 @@ on:
           - daily-agent-recap
           - weekly-business-review
           - social-kpi-report
+          - security-exposure-review
   schedule:
     # GitHub cron is UTC. 00:00 UTC is 20:00 America/New_York during EDT.
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * *"       # daily-agent-recap
+    # 12:00 UTC is 08:00 America/New_York during EDT.
+    - cron: "0 12 * * 1"      # weekly-business-review
+    # 23:00 UTC is 19:00 America/New_York during EDT.
+    - cron: "0 23 * * 0"      # social-kpi-report
+    # Every third UTC day at 14:00 UTC. Calendar-month reset is acceptable for v1.
+    - cron: "0 14 */3 * *"    # security-exposure-review
 
 permissions:
   contents: read
 
 concurrency:
-  group: systems-hub-${{ github.event.inputs.job_id || 'daily-agent-recap' }}
+  group: systems-hub-${{ github.event.inputs.job_id || github.event.schedule || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -29,7 +36,6 @@ jobs:
     timeout-minutes: 20
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-      SYSTEMS_HUB_JOB_ID: ${{ github.event.inputs.job_id || 'daily-agent-recap' }}
       SYSTEMS_HUB_DEEPSEEK_API_KEY: ${{ secrets.SYSTEMS_HUB_DEEPSEEK_API_KEY }}
       SYSTEMS_HUB_TELEGRAM_OPERATIONS_BOT_TOKEN: ${{ secrets.SYSTEMS_HUB_TELEGRAM_OPERATIONS_BOT_TOKEN }}
       SYSTEMS_HUB_TELEGRAM_OPERATIONS_CHAT_ID: ${{ secrets.SYSTEMS_HUB_TELEGRAM_OPERATIONS_CHAT_ID }}
@@ -53,6 +59,22 @@ jobs:
           mkdir -p "$HOME/.local/bin"
           ln -sf "$GITHUB_WORKSPACE/bin/hub" "$HOME/.local/bin/hub"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Select job
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            job_id="${{ github.event.inputs.job_id }}"
+          else
+            case "${{ github.event.schedule }}" in
+              "0 0 * * *") job_id="daily-agent-recap" ;;
+              "0 12 * * 1") job_id="weekly-business-review" ;;
+              "0 23 * * 0") job_id="social-kpi-report" ;;
+              "0 14 */3 * *") job_id="security-exposure-review" ;;
+              *) echo "Unsupported schedule: ${{ github.event.schedule }}" >&2; exit 1 ;;
+            esac
+          fi
+          echo "SYSTEMS_HUB_JOB_ID=$job_id" >> "$GITHUB_ENV"
+          echo "Selected Systems Hub job: $job_id"
 
       - name: Verify CLI
         run: |
