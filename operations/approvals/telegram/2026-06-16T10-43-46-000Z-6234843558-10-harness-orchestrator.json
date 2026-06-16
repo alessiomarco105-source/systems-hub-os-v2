@@ -45,5 +45,14 @@
     "task_id": "daily-agent-recap",
     "completed_at": "2026-06-16T10:52:05.236Z",
     "runner": "hub telegram run-light"
+  },
+  "reply": {
+    "status": "sent",
+    "sent_at": "2026-06-16T12:20:11.420Z",
+    "source": "latest",
+    "task_id": "daily-agent-recap",
+    "receipt": "operations/runs/usage/2026/06/2026-06-16T10-52-05-231Z-daily-agent-recap.json",
+    "output": "operations/runs/usage/2026/06/2026-06-16T10-52-05-231Z-daily-agent-recap.md",
+    "runner": "hub telegram reply"
   }
 }

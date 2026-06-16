@@ -476,6 +476,9 @@ async function commandTelegramEnvelope(id) {
   console.log(`Tier: ${envelope.approval_tier?.tier || "unknown"} (${envelope.approval_tier?.required_approval || "unknown"})`);
   console.log(`Created: ${envelope.created_at || "unknown"}`);
   console.log(`Source: ${envelope.source?.bot || "unknown"} message ${envelope.source?.message_id || "unknown"}`);
+  if (envelope.reply) {
+    console.log(`Reply: ${envelope.reply.status || "unknown"}${envelope.reply.sent_at ? ` at ${envelope.reply.sent_at}` : ""}`);
+  }
   console.log("");
   console.log("Request:");
   console.log(envelope.request?.text || "(empty)");
