@@ -38,7 +38,7 @@ Pi plus an LLM is not enough for unattended operations. A complete system still 
 | v2 job dry-run adapter | built |
 | Telegram outbound adapter | built and locally tested |
 | Telegram interactive router | scaffolded, not activated |
-| Scheduler activation | pending |
+| Scheduler activation | daily-agent-recap active in GitHub Actions |
 | Codex automation retirement | pending |
 | Cloud/always-on runner | plan built, pending activation approval |
 

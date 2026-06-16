@@ -22,7 +22,7 @@ This runbook describes the recommended v1 cloud runner. It does not activate sch
 1. Confirm `systems-hub-os-v2` is pushed to the private GitHub source-of-truth repo.
 2. Add required secrets in GitHub repository settings.
 3. Use `.github/workflows/systems-hub-jobs.yml`.
-4. Start with `workflow_dispatch` only; no schedule is active in the v1 workflow.
+4. Start with `workflow_dispatch`, then activate one schedule at a time after manual verification.
 5. Run `daily-agent-recap` manually.
 6. Verify:
    - Telegram notification arrived;
@@ -66,7 +66,7 @@ Expected:
 
 ## Current Workflow
 
-The manual-dispatch workflow is present at `.github/workflows/systems-hub-jobs.yml`.
+The workflow is present at `.github/workflows/systems-hub-jobs.yml`.
 
 It:
 
@@ -78,9 +78,12 @@ It:
 - uploads run receipts as artifacts;
 - sends an operations Telegram failure notification if the workflow fails.
 
+It currently has one active schedule:
+
+- `daily-agent-recap`: `0 0 * * *` UTC, which is 20:00 America/New_York during EDT.
+
 It does not:
 
-- activate a cron schedule;
 - commit receipts back to the repo;
 - run protected-data jobs;
 - process inbound Telegram envelopes.

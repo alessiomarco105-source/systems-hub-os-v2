@@ -12,12 +12,15 @@ on:
           - daily-agent-recap
           - weekly-business-review
           - social-kpi-report
+  schedule:
+    # GitHub cron is UTC. 00:00 UTC is 20:00 America/New_York during EDT.
+    - cron: "0 0 * * *"
 
 permissions:
   contents: read
 
 concurrency:
-  group: systems-hub-${{ github.event.inputs.job_id || github.run_id }}
+  group: systems-hub-${{ github.event.inputs.job_id || 'daily-agent-recap' }}
   cancel-in-progress: false
 
 jobs:
@@ -26,6 +29,7 @@ jobs:
     timeout-minutes: 20
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      SYSTEMS_HUB_JOB_ID: ${{ github.event.inputs.job_id || 'daily-agent-recap' }}
       SYSTEMS_HUB_DEEPSEEK_API_KEY: ${{ secrets.SYSTEMS_HUB_DEEPSEEK_API_KEY }}
       SYSTEMS_HUB_TELEGRAM_OPERATIONS_BOT_TOKEN: ${{ secrets.SYSTEMS_HUB_TELEGRAM_OPERATIONS_BOT_TOKEN }}
       SYSTEMS_HUB_TELEGRAM_OPERATIONS_CHAT_ID: ${{ secrets.SYSTEMS_HUB_TELEGRAM_OPERATIONS_CHAT_ID }}
@@ -54,13 +58,13 @@ jobs:
         run: |
           hub status
           hub telegram health
-          hub job "${{ github.event.inputs.job_id }}" --dry-run
+          hub job "$SYSTEMS_HUB_JOB_ID" --dry-run
 
       - name: Run selected job
         id: run_job
         run: |
           set -o pipefail
-          hub job "${{ github.event.inputs.job_id }}" --notify | tee /tmp/systems-hub-job.log
+          hub job "$SYSTEMS_HUB_JOB_ID" --notify | tee /tmp/systems-hub-job.log
           receipt="$(awk -F': ' '/^Receipt: /{print $2}' /tmp/systems-hub-job.log | tail -1)"
           output="$(awk -F': ' '/^Output: /{print $2}' /tmp/systems-hub-job.log | tail -1)"
           manifest="${receipt%.json}.manifest.json"
@@ -84,4 +88,4 @@ jobs:
         run: |
           node runtime/scripts/telegram-notify.mjs \
             --channel operations \
-            --text "Systems Hub cloud job failed: ${{ github.event.inputs.job_id }} run ${{ github.run_id }}"
+            --text "Systems Hub cloud job failed: $SYSTEMS_HUB_JOB_ID run ${{ github.run_id }}"

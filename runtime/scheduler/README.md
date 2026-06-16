@@ -28,7 +28,7 @@ hub job social-kpi-report --dry-run
 hub job weekly-business-review --notify
 ```
 
-Manual job execution and Telegram notification delivery are available through the v2 CLI. Actual unattended scheduled activation is pending: no launchd, cron, or cloud schedule has been activated in v2.
+Manual job execution and Telegram notification delivery are available through the v2 CLI. The first unattended cloud schedule is active for `daily-agent-recap` only.
 
 ## Notification Mapping
 
@@ -38,6 +38,14 @@ Each job declares its notification channel in `operations/jobs/registry.yaml`.
 - `daily-agent-recap`: `operations`
 - `security-exposure-review`: `operations`
 - `social-kpi-report`: `social`
+
+## Active Cloud Schedules
+
+| Job | Runner | Cron | Notes |
+|---|---|---:|---|
+| `daily-agent-recap` | GitHub Actions | `0 0 * * *` UTC | 20:00 America/New_York during EDT |
+
+Weekly, social KPI, and security schedules remain inactive.
 
 ## Cutover
 
