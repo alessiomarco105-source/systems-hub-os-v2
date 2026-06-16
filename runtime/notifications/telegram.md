@@ -21,7 +21,7 @@ Runtime script: `runtime/scripts/telegram-notify.mjs`
 
 - `operations`: configured in the v2 Keychain and tested.
 - `social`: configured in the v2 Keychain and tested.
-- `signup`: channel supported by the v2 adapter; token and chat id still need to be added to the v2 Keychain.
+- `signup`: configured in the v2 Keychain. This channel maps to `Trader'sHub_alerts_bot`.
 - Interactive routing bot: not migrated yet. This is a separate inbound bot/webhook workflow, not the same as outbound notifications.
 
 ## Safety
