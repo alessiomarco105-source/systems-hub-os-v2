@@ -1,6 +1,6 @@
 {
   "schema": "systems_hub.telegram_task_envelope/v1",
-  "status": "pending_marco_approval",
+  "status": "light_run_completed",
   "created_at": "2026-06-16T10:50:11.943Z",
   "source": {
     "channel": "interactive",
@@ -40,5 +40,10 @@
     "required": true,
     "syntax": "approved: light 2026-06-16T10-43-46-000Z-6234843558-10-harness-orchestrator",
     "notes": "Envelope capture only. Running the routed agent requires a separate approved command using the tier shown above."
+  },
+  "execution": {
+    "task_id": "daily-agent-recap",
+    "completed_at": "2026-06-16T10:52:05.236Z",
+    "runner": "hub telegram run-light"
   }
 }

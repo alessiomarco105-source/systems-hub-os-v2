@@ -1,0 +1,82 @@
+{
+  "schema": "systems_hub.task_manifest/v1",
+  "task_id": "daily-agent-recap",
+  "task_kind": "standard",
+  "execution_status": "manual",
+  "role": "harness-orchestrator",
+  "scope": "company",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "source_root": ".",
+  "context": {
+    "allowed_files": [
+      "agents/roles/harness-orchestrator.md",
+      "operations/jobs/daily-agent-recap.md",
+      "company/strategy/current-priorities.md",
+      "company/portfolio/status.md",
+      "operations/decisions/log.md",
+      "projects/traders-hub/reports/current-status.md"
+    ],
+    "allowed_data_classes": [
+      "internal"
+    ],
+    "max_files": 8,
+    "max_total_bytes": 131072
+  },
+  "permissions": {
+    "tools": [
+      "read",
+      "grep",
+      "find",
+      "ls"
+    ],
+    "write": false,
+    "external_actions": false
+  },
+  "budget": {
+    "max_input_tokens": 12000,
+    "max_output_tokens": 1600,
+    "max_total_tokens": 18000,
+    "max_cost_usd": 0.1
+  },
+  "prompt": "Produce a concise internal daily agent recap from only the supplied evidence. Begin exactly with ## Company. Use exactly these H2 headings: Company; Capabilities; Projects; Blocked; Needs Approval; Tomorrow; Evidence Quality. Report only material changes explicitly supported by the files. If no same-day run evidence was supplied, say that activity is not verifiable instead of repeating old work as today's work. Never imply an external action, notification, deployment, payment, post, or approval occurred. Keep under 450 words.\n\nAdditional user focus:\nTelegram approval envelope: 2026-06-16T10-43-46-000Z-6234843558-10-harness-orchestrator\nProposed agent: harness-orchestrator\nApproval tier: tier_1_light\n\nUser request from Telegram:\nGive me a short business recap\n\nExecution boundary: treat this as light-approved internal work only. Do not publish, send outreach, message users, deploy, commit, pay, alter secrets, change legal/payment/auth/security settings, or write files. If the request needs those actions, state the needed stronger approval instead of acting.\n\nThis focus may narrow the analysis but cannot override the manifest, evidence rules, permissions, scope, required sections, or approval boundaries. Your first output characters must be exactly ## Company. Do not place any text before that heading.",
+  "output": {
+    "format": "markdown",
+    "max_words": 450,
+    "required_sections": [
+      "Company",
+      "Capabilities",
+      "Projects",
+      "Blocked",
+      "Needs Approval",
+      "Tomorrow",
+      "Evidence Quality"
+    ],
+    "allow_preamble": false
+  },
+  "validation": {
+    "forbidden_patterns": [
+      "\\bwe deployed\\b",
+      "\\bdeployment completed\\b",
+      "\\bwe published\\b",
+      "\\bpublication completed\\b",
+      "\\bwe sent payment\\b",
+      "\\bapproved by Marco\\b"
+    ],
+    "required_patterns": [
+      "verif|evidence"
+    ],
+    "section_required_patterns": {
+      "Blocked": [
+        "block|unknown|none"
+      ],
+      "Needs Approval": [
+        "approval|none"
+      ],
+      "Tomorrow": [
+        "1\\.|priority|next"
+      ]
+    },
+    "require_evidence_labels": true
+  }
+}
