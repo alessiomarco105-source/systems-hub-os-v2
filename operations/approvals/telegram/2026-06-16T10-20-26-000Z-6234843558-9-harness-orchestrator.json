@@ -22,6 +22,12 @@
     "text": "test",
     "attachments": []
   },
+  "approval_tier": {
+    "tier": "tier_0_intake",
+    "required_approval": "none_for_capture",
+    "reason": "intake/classification only; execution remains disabled",
+    "policy": "operations/approvals/policy.md"
+  },
   "permissions": {
     "may_run_model": false,
     "may_write_files": false,
@@ -32,7 +38,7 @@
   },
   "approval": {
     "required": true,
-    "syntax": "approved: telegram envelope 2026-06-16T10-20-26-000Z-6234843558-9-harness-orchestrator",
-    "notes": "Envelope capture only. Running the routed agent requires a separate approved command."
+    "syntax": "approved: light 2026-06-16T10-20-26-000Z-6234843558-9-harness-orchestrator",
+    "notes": "Envelope capture only. Running the routed agent requires a separate approved command using the tier shown above."
   }
 }

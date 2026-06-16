@@ -458,6 +458,7 @@ async function commandTelegramEnvelope(id) {
   console.log(`Envelope: ${basename(path)}`);
   console.log(`Status: ${envelope.status || "unknown"}`);
   console.log(`Agent: ${envelope.route?.proposed_agent || "unknown"}`);
+  console.log(`Tier: ${envelope.approval_tier?.tier || "unknown"} (${envelope.approval_tier?.required_approval || "unknown"})`);
   console.log(`Created: ${envelope.created_at || "unknown"}`);
   console.log(`Source: ${envelope.source?.bot || "unknown"} message ${envelope.source?.message_id || "unknown"}`);
   console.log("");

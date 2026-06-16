@@ -41,6 +41,69 @@ const routes = [
   }
 ];
 
+const approvalTiers = [
+  {
+    tier: "tier_3_protected",
+    requiredApproval: "protected",
+    reason: "external, irreversible, legal, payment, credential, production, or governance action",
+    patterns: [
+      /\bpost\b/i,
+      /\bpublish\b/i,
+      /\bsend\b/i,
+      /\boutreach\b/i,
+      /\bemail\b/i,
+      /\bpay\b/i,
+      /\bpurchase\b/i,
+      /\bdelete\b/i,
+      /\bdeploy\b/i,
+      /\brotate\b/i,
+      /\bsecret\b/i,
+      /\btoken\b/i,
+      /\blegal\b/i,
+      /\bprivacy\b/i,
+      /\bterms\b/i,
+      /\bscheduler\b/i,
+      /\brouting\b/i,
+      /\bcore\b/i
+    ]
+  },
+  {
+    tier: "tier_2_strong",
+    requiredApproval: "strong",
+    reason: "code, security, payment setup, user data, finance structure, or product change",
+    patterns: [
+      /\bcode\b/i,
+      /\bimplement\b/i,
+      /\bfix\b/i,
+      /\bchange\b/i,
+      /\bpayment\b/i,
+      /\bcheckout\b/i,
+      /\bauth\b/i,
+      /\brls\b/i,
+      /\bsecurity\b/i,
+      /\buser data\b/i,
+      /\bfinance workbook\b/i,
+      /\bcommit\b/i
+    ]
+  },
+  {
+    tier: "tier_1_light",
+    requiredApproval: "light",
+    reason: "low-risk internal logging, read-only report, draft, task, or summary",
+    patterns: [
+      /\blog\b/i,
+      /\bexpense\b/i,
+      /\brevenue\b/i,
+      /\breport\b/i,
+      /\bdraft\b/i,
+      /\bsummarize\b/i,
+      /\bsummary\b/i,
+      /\btask\b/i,
+      /\brecap\b/i
+    ]
+  }
+];
+
 function fail(message) {
   throw new Error(message);
 }
@@ -97,6 +160,17 @@ function routeMessage(text) {
   return "harness-orchestrator";
 }
 
+function approvalTier(text) {
+  for (const tier of approvalTiers) {
+    if (tier.patterns.some(pattern => pattern.test(text))) return tier;
+  }
+  return {
+    tier: "tier_0_intake",
+    requiredApproval: "none_for_capture",
+    reason: "intake/classification only; execution remains disabled"
+  };
+}
+
 function safeText(value) {
   return String(value || "")
     .replace(/\r/g, "")
@@ -114,6 +188,8 @@ function envelopeName(message, route) {
 
 async function writeEnvelope(message, route) {
   await mkdir(envelopeDir, { recursive: true });
+  const text = safeText(message.text);
+  const tier = approvalTier(text);
   const envelope = {
     schema: "systems_hub.telegram_task_envelope/v1",
     status: "pending_marco_approval",
@@ -135,8 +211,14 @@ async function writeEnvelope(message, route) {
       confidence: route === "harness-orchestrator" ? "default" : "keyword"
     },
     request: {
-      text: safeText(message.text),
+      text,
       attachments: []
+    },
+    approval_tier: {
+      tier: tier.tier,
+      required_approval: tier.requiredApproval,
+      reason: tier.reason,
+      policy: "operations/approvals/policy.md"
     },
     permissions: {
       may_run_model: false,
@@ -148,8 +230,8 @@ async function writeEnvelope(message, route) {
     },
     approval: {
       required: true,
-      syntax: `approved: telegram envelope ${envelopeName(message, route).replace(/\.json$/, "")}`,
-      notes: "Envelope capture only. Running the routed agent requires a separate approved command."
+      syntax: `approved: ${tier.requiredApproval === "none_for_capture" ? "light" : tier.requiredApproval} ${envelopeName(message, route).replace(/\.json$/, "")}`,
+      notes: "Envelope capture only. Running the routed agent requires a separate approved command using the tier shown above."
     }
   };
   const path = resolve(envelopeDir, envelopeName(message, route));
@@ -193,10 +275,12 @@ async function main() {
     const text = String(message.text || "").trim();
     if (!text) continue;
     const route = routeMessage(text);
+    const tier = approvalTier(text);
     console.log([
       `update_chat_id=${message.chat?.id || "unknown"}`,
       `from=${message.from?.username || message.from?.first_name || "unknown"}`,
       `route=${route}`,
+      `tier=${tier.tier}`,
       `text=${text.slice(0, 160)}`
     ].join(" | "));
     if (options.createEnvelope) {
