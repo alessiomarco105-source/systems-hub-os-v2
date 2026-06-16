@@ -61,6 +61,7 @@ Promotion does not decide tax treatment. Ledger entries currently set `tax_treat
 Use these commands to inspect and export booked records:
 
 ```bash
+hub finance status
 hub finance month 2026-06
 hub finance totals --month 2026-06
 hub finance export --month 2026-06 --format csv

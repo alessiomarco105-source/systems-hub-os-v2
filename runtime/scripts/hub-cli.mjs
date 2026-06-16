@@ -54,6 +54,7 @@ Usage:
   hub telegram finance-draft <envelope-id> [--dry-run]
   hub telegram run-light <envelope-id> [--dry-run] [--review]
   hub telegram reply <envelope-id> --from-output latest [--dry-run]
+  hub finance status
   hub finance drafts
   hub finance draft <draft-id>
   hub finance promote <draft-id> --approved
@@ -1127,6 +1128,11 @@ async function financeDraftFiles() {
 async function commandFinance(args) {
   const command = args[0];
   const rest = args.slice(1);
+  if (command === "status") {
+    if (rest.length) fail("usage: hub finance status");
+    await commandFinanceStatus();
+    return;
+  }
   if (command === "drafts") {
     if (rest.length) fail("usage: hub finance drafts");
     const files = await financeDraftFiles();
@@ -1219,7 +1225,7 @@ async function commandFinance(args) {
     await commandFinanceExport(options.month);
     return;
   }
-  fail("usage: hub finance drafts | hub finance draft <draft-id> | hub finance promote <draft-id> --approved | hub finance confirm <draft-id> [--send] | hub finance month YYYY-MM | hub finance totals --month YYYY-MM | hub finance export --month YYYY-MM --format csv");
+  fail("usage: hub finance status | hub finance drafts | hub finance draft <draft-id> | hub finance promote <draft-id> --approved | hub finance confirm <draft-id> [--send] | hub finance month YYYY-MM | hub finance totals --month YYYY-MM | hub finance export --month YYYY-MM --format csv");
 }
 
 function currentLedgerPath(date = new Date()) {
@@ -1306,6 +1312,96 @@ async function commandFinanceConfirm(draftId, options) {
     "--text", text
   ]);
   if (code !== 0) fail("finance confirmation reply failed", code);
+}
+
+function currentMonthKey(date = new Date()) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+async function financeEnvelopeFiles() {
+  let entries = [];
+  try {
+    entries = await readdir(telegramApprovalDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+  const files = entries
+    .filter(entry => entry.isFile() && entry.name.endsWith(".json"))
+    .map(entry => resolve(telegramApprovalDir, entry.name))
+    .sort()
+    .reverse();
+  const financeFiles = [];
+  for (const path of files) {
+    try {
+      const envelope = await readJson(path);
+      if (isFinanceEnvelope(envelope)) financeFiles.push({ path, envelope });
+    } catch {
+      // Ignore invalid local envelopes in status output.
+    }
+  }
+  return financeFiles;
+}
+
+async function commandFinanceStatus() {
+  const month = currentMonthKey();
+  const draftFiles = await financeDraftFiles();
+  const draftRows = [];
+  for (const path of draftFiles) {
+    try {
+      draftRows.push({ path, draft: await readJson(path) });
+    } catch {
+      // Ignore invalid draft files in status output.
+    }
+  }
+  const financeEnvelopes = await financeEnvelopeFiles();
+  const pendingEnvelopes = financeEnvelopes.filter(({ envelope }) =>
+    envelope.status === "pending_marco_approval"
+  );
+  const pendingDrafts = draftRows.filter(({ draft }) => draft.status === "draft_pending_review");
+  const bookedDrafts = draftRows.filter(({ draft }) => draft.status === "booked");
+  const { entries } = await readLedgerEntries(month);
+  const totals = financeTotalsByCurrency(entries);
+
+  console.log("Finance workflow status");
+  console.log(`Month: ${month}`);
+  console.log(`Pending finance envelopes: ${pendingEnvelopes.length}`);
+  console.log(`Drafts pending review: ${pendingDrafts.length}`);
+  console.log(`Booked drafts: ${bookedDrafts.length}`);
+  console.log(`Booked ledger entries this month: ${entries.length}`);
+
+  if (totals.size) {
+    console.log("");
+    console.log("CURRENT MONTH TOTALS");
+    console.log("CURRENCY  REVENUE      EXPENSE      NET");
+    for (const [currency, total] of totals) {
+      console.log(
+        `${currency.padEnd(9)} ${total.revenue.toFixed(2).padEnd(12)} ` +
+        `${total.expense.toFixed(2).padEnd(12)} ${total.net.toFixed(2)}`
+      );
+    }
+  }
+
+  if (pendingEnvelopes.length) {
+    const latest = pendingEnvelopes[0];
+    const id = basename(latest.path, ".json");
+    console.log("");
+    console.log("NEXT PENDING ENVELOPE");
+    console.log(`- ${id}`);
+    console.log(`- ${latest.envelope.request?.text || ""}`);
+    console.log(`- Preview: hub telegram finance-draft ${id} --dry-run`);
+  } else if (pendingDrafts.length) {
+    const latest = pendingDrafts[0];
+    const id = basename(latest.path, ".json");
+    console.log("");
+    console.log("NEXT PENDING DRAFT");
+    console.log(`- ${id}`);
+    console.log(`- Inspect: hub finance draft ${id}`);
+    console.log(`- Promote after approval: hub finance promote ${id} --approved`);
+  } else {
+    console.log("");
+    console.log(`Next: no pending finance capture. Send a finance message to @Systemshub_bot or run \`hub finance month ${month}\`.`);
+  }
 }
 
 async function commandFinanceMonth(month) {

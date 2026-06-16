@@ -86,6 +86,7 @@ Available commands:
 | `hub tui` | Open the interactive terminal interface |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
 | `hub finance drafts` | List draft finance captures |
+| `hub finance status` | Show pending finance envelopes, pending drafts, booked drafts, and current-month totals |
 | `hub finance draft <id>` | Inspect a draft finance capture and its promotion boundary |
 | `hub finance promote <id> --approved` | Promote an approved draft into the internal monthly finance ledger |
 | `hub finance confirm <id>` | Preview a Telegram confirmation for a draft or booked entry |

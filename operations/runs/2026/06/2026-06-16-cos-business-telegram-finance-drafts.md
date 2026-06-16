@@ -21,6 +21,7 @@ Added a draft-safe path for COS-Business expense and revenue logging from Telegr
 - Added `hub finance promote <draft-id> --approved` after the first approved promotion request.
 - Added monthly finance review commands: `hub finance month`, `hub finance totals`, and `hub finance export`.
 - Added `hub finance confirm <draft-id>` preview and `--send` path for Telegram confirmations.
+- Added `hub finance status` as the quick operating view for pending envelopes, drafts, booked entries, and current-month totals.
 
 ## Boundary
 
