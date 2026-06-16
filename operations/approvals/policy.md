@@ -23,6 +23,7 @@ Never allowed in Tier 0:
 Allowed after a simple Marco approval when the request is explicit and low-risk:
 
 - log an expense or revenue item Marco directly stated;
+- create a draft finance capture from a locked Telegram envelope;
 - run a read-only report;
 - create a draft content asset;
 - create a local internal task;
@@ -43,6 +44,7 @@ Required for business or product actions with meaningful risk:
 - modifying design implementation;
 - touching user data;
 - editing finance workbooks beyond explicit owner-stated entries;
+- promoting finance drafts into final books when category, lane, or tax treatment is uncertain;
 - changing payment setup;
 - changing auth, RLS, security, legal, privacy, or terms;
 - running security tests;

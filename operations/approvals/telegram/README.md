@@ -17,6 +17,7 @@ Use:
 hub telegram router --limit 5 --create-envelope
 hub telegram envelopes
 hub telegram envelope <envelope-id>
+hub telegram finance-draft <envelope-id> --dry-run
 hub telegram run-light <envelope-id> --dry-run
 hub telegram reply <envelope-id> --from-output latest --dry-run
 ```
@@ -36,6 +37,21 @@ hub telegram run-light <envelope-id>
 ```
 
 This only works for Tier 0/Tier 1 envelopes and only when the proposed agent maps to an existing safe read-only task manifest. It refuses strong/protected envelopes and agents without a safe mapping.
+
+## Finance Draft Capture
+
+COS-Business finance messages can use a separate draft-safe path:
+
+```bash
+hub telegram finance-draft <envelope-id> --dry-run
+hub telegram finance-draft <envelope-id>
+hub finance drafts
+hub finance draft <draft-id>
+```
+
+This parses the Telegram text into a local draft under `operations/finance/drafts/telegram/` and marks the source envelope as `finance_draft_created`.
+
+It does not update ledgers, statements, taxes, scoreboards, payments, or external systems. Final booking requires a separate promotion approval.
 
 ## Reply Delivery
 

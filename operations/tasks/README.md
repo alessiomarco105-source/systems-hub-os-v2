@@ -77,12 +77,16 @@ Available commands:
 | `hub telegram router --limit 5 --create-envelope` | Capture recent inbound messages as pending local approval envelopes |
 | `hub telegram envelopes` | List captured Telegram approval envelopes |
 | `hub telegram envelope <id>` | Inspect one captured envelope and its approval boundary |
+| `hub telegram finance-draft <id> --dry-run` | Preview draft finance capture from a COS-Business Telegram envelope |
+| `hub telegram finance-draft <id>` | Create a local draft finance record without updating final books |
 | `hub telegram run-light <id> --dry-run` | Preview a light-approved envelope run without spending tokens |
 | `hub telegram run-light <id>` | Run a Tier 0/Tier 1 envelope through a mapped read-only task |
 | `hub telegram reply <id> --from-output latest --dry-run` | Preview a Telegram reply from the latest saved output |
 | `hub telegram reply <id> --from-output latest` | Send the latest saved output to the original Telegram chat |
 | `hub tui` | Open the interactive terminal interface |
 | `hub status` | Show repository, Pi, key, task, receipt, and activation state |
+| `hub finance drafts` | List draft finance captures |
+| `hub finance draft <id>` | Inspect a draft finance capture and its promotion boundary |
 
 Dynamic input:
 

@@ -5,6 +5,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { emitKeypressEvents } from "node:readline";
 import { createInterface } from "node:readline/promises";
 import {
+  mkdir,
   readFile,
   readdir,
   rm,
@@ -19,6 +20,7 @@ const repoRoot = resolve(dirname(scriptPath), "../..");
 const taskDir = resolve(repoRoot, "operations/tasks");
 const usageDir = resolve(repoRoot, "operations/runs/usage");
 const telegramApprovalDir = resolve(repoRoot, "operations/approvals/telegram");
+const financeDraftDir = resolve(repoRoot, "operations/finance/drafts/telegram");
 const taskRunner = resolve(repoRoot, "runtime/scripts/run-task-manifest.mjs");
 const jobRunner = resolve(repoRoot, "runtime/scripts/run-job.mjs");
 const telegramHealthRunner = resolve(repoRoot, "runtime/scripts/telegram-health.mjs");
@@ -47,8 +49,11 @@ Usage:
   hub telegram router [--dry-run] [--limit N] [--create-envelope]
   hub telegram envelopes
   hub telegram envelope <envelope-id>
+  hub telegram finance-draft <envelope-id> [--dry-run]
   hub telegram run-light <envelope-id> [--dry-run] [--review]
   hub telegram reply <envelope-id> --from-output latest [--dry-run]
+  hub finance drafts
+  hub finance draft <draft-id>
   hub run <task-id> [--input "focus"] [--review]
   hub review latest [task-id]
   hub validate [task-id]
@@ -410,6 +415,12 @@ async function commandTelegram(args) {
     await commandTelegramEnvelope(rest[0]);
     return;
   }
+  if (command === "finance-draft") {
+    const { options, positional } = parseFlags(rest, new Set(["dry-run"]), new Set(["dry-run"]));
+    if (positional.length !== 1) fail("usage: hub telegram finance-draft <envelope-id> [--dry-run]");
+    await commandTelegramFinanceDraft(positional[0], options);
+    return;
+  }
   if (command === "run-light") {
     const { options, positional } = parseFlags(rest, new Set(["dry-run", "review"]), new Set(["dry-run", "review"]));
     if (positional.length !== 1) fail("usage: hub telegram run-light <envelope-id> [--dry-run] [--review]");
@@ -422,7 +433,7 @@ async function commandTelegram(args) {
     await commandTelegramReply(positional[0], options);
     return;
   }
-  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N] [--create-envelope] | hub telegram envelopes | hub telegram envelope <envelope-id> | hub telegram run-light <envelope-id> [--dry-run] [--review] | hub telegram reply <envelope-id> --from-output latest [--dry-run]");
+  fail("usage: hub telegram health [--verbose] | hub telegram router [--dry-run] [--limit N] [--create-envelope] | hub telegram envelopes | hub telegram envelope <envelope-id> | hub telegram finance-draft <envelope-id> [--dry-run] | hub telegram run-light <envelope-id> [--dry-run] [--review] | hub telegram reply <envelope-id> --from-output latest [--dry-run]");
 }
 
 async function commandTelegramEnvelopes() {
@@ -497,9 +508,190 @@ async function commandTelegramEnvelope(id) {
   if (["tier_0_intake", "tier_1_light"].includes(envelope.approval_tier?.tier)) {
     console.log(`- Light run preview: hub telegram run-light ${basename(path, ".json")} --dry-run`);
   }
+  if (isFinanceEnvelope(envelope)) {
+    console.log(`- Finance draft preview: hub telegram finance-draft ${basename(path, ".json")} --dry-run`);
+  }
   if (envelope.status === "light_run_completed") {
     console.log(`- Reply preview: hub telegram reply ${basename(path, ".json")} --from-output latest --dry-run`);
   }
+}
+
+function isFinanceEnvelope(envelope) {
+  const text = envelope.request?.text || "";
+  return envelope.route?.proposed_agent === "chief-of-staff-business" &&
+    /\b(expense|cost|spent|paid|revenue|income|sale|subscription|challenge|fee|book|log)\b/i.test(text);
+}
+
+function normalizeMoney(value) {
+  if (!value) return null;
+  const normalized = value.replace(",", ".");
+  const number = Number.parseFloat(normalized);
+  if (!Number.isFinite(number)) return null;
+  return Math.round(number * 100) / 100;
+}
+
+function parseFinanceDraft(text) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  const amountMatch =
+    /([$€£])\s*([0-9]+(?:[.,][0-9]{1,2})?)/.exec(clean) ||
+    /([0-9]+(?:[.,][0-9]{1,2})?)\s*(usd|dollars?|eur|euros?|gbp|pounds?|\$|€|£)\b/i.exec(clean);
+  let amount = null;
+  let currency = "USD";
+  if (amountMatch) {
+    if (amountMatch[1] && /^[0-9]/.test(amountMatch[1])) {
+      amount = normalizeMoney(amountMatch[1]);
+      const unit = String(amountMatch[2] || "").toLowerCase();
+      if (/eur|euro|€/.test(unit)) currency = "EUR";
+      else if (/gbp|pound|£/.test(unit)) currency = "GBP";
+    } else {
+      amount = normalizeMoney(amountMatch[2]);
+      const symbol = amountMatch[1];
+      if (symbol === "€") currency = "EUR";
+      else if (symbol === "£") currency = "GBP";
+    }
+  }
+
+  const revenueWords = /\b(revenue|income|sale|sales|subscription received|payment received|customer paid|client paid|got paid|received)\b/i;
+  const expenseWords = /\b(expense|cost|spent|paid|bought|purchase|fee|subscription|challenge|bill|invoice)\b/i;
+  const type = revenueWords.test(clean)
+    ? "revenue"
+    : expenseWords.test(clean)
+      ? "expense"
+      : "unknown";
+
+  let category = "uncategorized";
+  let lane = "systems_hub_llc";
+  const reviewNotes = [];
+  if (/\b(prop|challenge|funded|trading challenge)\b/i.test(clean)) {
+    category = "trading_challenge_fee";
+    lane = "trading_edge_refinement";
+    reviewNotes.push("Trading-related item: keep separate from Systems Hub LLC tax treatment until reviewed.");
+  } else if (/\b(namecheap|domain|dns)\b/i.test(clean)) {
+    category = "domain_and_dns";
+  } else if (/\b(chatgpt|claude|deepseek|openai|anthropic|ai subscription)\b/i.test(clean)) {
+    category = "ai_tools";
+  } else if (/\b(lemon ?squeezy|stripe|payment processor|checkout)\b/i.test(clean)) {
+    category = type === "revenue" ? "platform_revenue" : "payment_processing";
+  } else if (/\b(llc|state filing|registered agent|legal)\b/i.test(clean)) {
+    category = "legal_and_admin";
+  } else if (/\b(subscription|software|tool|saas)\b/i.test(clean)) {
+    category = "software_subscription";
+  }
+
+  if (!amount) reviewNotes.push("Amount was not confidently parsed.");
+  if (type === "unknown") reviewNotes.push("Entry type needs review: expense or revenue was not explicit.");
+
+  return {
+    amount,
+    currency,
+    type,
+    category,
+    lane,
+    description: clean,
+    confidence: amount && type !== "unknown" ? "medium" : "needs_review",
+    review_notes: reviewNotes
+  };
+}
+
+function financeDraftIdFromEnvelope(path) {
+  return `${new Date().toISOString().replace(/[:.]/g, "-")}-${basename(path, ".json")}`;
+}
+
+function financeDraftPath(id) {
+  const safeId = id.endsWith(".json") ? id : `${id}.json`;
+  if (!/^[a-zA-Z0-9_.:-]+$/.test(safeId)) fail("invalid finance draft id");
+  const path = resolve(financeDraftDir, safeId);
+  if (!path.startsWith(`${financeDraftDir}${sep}`)) fail("invalid finance draft path");
+  return path;
+}
+
+function assertEnvelopeFinanceDraftable(envelope, id) {
+  if (envelope.schema !== "systems_hub.telegram_task_envelope/v1") {
+    fail(`not a Telegram task envelope: ${id}`);
+  }
+  if (envelope.status !== "pending_marco_approval") {
+    fail(`envelope is not pending Marco approval: ${envelope.status || "unknown"}`);
+  }
+  if (!isFinanceEnvelope(envelope)) {
+    fail("envelope is not routed as a COS-Business finance/logging request");
+  }
+  const tier = envelope.approval_tier?.tier;
+  if (!["tier_1_light"].includes(tier)) {
+    fail(`finance draft requires a Tier 1 light envelope, got ${tier || "unknown"}`);
+  }
+  const permissions = envelope.permissions || {};
+  for (const [key, value] of Object.entries(permissions)) {
+    if (value !== false) fail(`envelope permission is not locked down: ${key}`);
+  }
+  if (looksSensitive(envelope.request?.text || "")) {
+    fail("envelope text appears to contain a secret; refuse finance draft capture");
+  }
+}
+
+async function markEnvelopeFinanceDraft(path, envelope, draft) {
+  const updated = structuredClone(envelope);
+  updated.status = "finance_draft_created";
+  updated.finance_draft = {
+    status: "draft_pending_review",
+    created_at: new Date().toISOString(),
+    draft_id: draft.id,
+    path: draft.path,
+    runner: "hub telegram finance-draft"
+  };
+  await writeFile(path, `${JSON.stringify(updated, null, 2)}\n`, { mode: 0o600 });
+}
+
+async function commandTelegramFinanceDraft(id, options) {
+  const path = envelopePath(id);
+  let envelope;
+  try {
+    envelope = await readJson(path);
+  } catch {
+    fail(`unknown Telegram envelope: ${id}`);
+  }
+  assertEnvelopeFinanceDraftable(envelope, id);
+  const parsed = parseFinanceDraft(envelope.request?.text || "");
+  const draftId = financeDraftIdFromEnvelope(path);
+  const draft = {
+    schema: "systems_hub.finance_draft/v1",
+    id: draftId,
+    status: "draft_pending_review",
+    created_at: new Date().toISOString(),
+    owner_agent: "chief-of-staff-business",
+    source: {
+      type: "telegram_envelope",
+      envelope: relative(repoRoot, path).split(sep).join("/"),
+      bot: envelope.source?.bot || null,
+      chat_id: envelope.source?.chat_id || null,
+      message_id: envelope.source?.message_id || null,
+      date: envelope.source?.date || null
+    },
+    entry: parsed,
+    controls: {
+      draft_only: true,
+      ledger_updated: false,
+      requires_review_before_book: true,
+      requires_explicit_promotion_approval: true,
+      approval_syntax: `approved: promote finance draft ${draftId}`
+    }
+  };
+  const draftPath = financeDraftPath(draftId);
+  draft.path = relative(repoRoot, draftPath).split(sep).join("/");
+
+  if (options["dry-run"]) {
+    console.log("Telegram finance draft dry-run");
+    console.log(`Envelope: ${basename(path)}`);
+    console.log(`Would create: ${draft.path}`);
+    console.log(JSON.stringify(draft, null, 2));
+    return;
+  }
+
+  await mkdir(financeDraftDir, { recursive: true });
+  await writeFile(draftPath, `${JSON.stringify(draft, null, 2)}\n`, { flag: "wx", mode: 0o600 });
+  await markEnvelopeFinanceDraft(path, envelope, draft);
+  console.log(`Finance draft created: ${draft.path}`);
+  console.log("Status: draft_pending_review");
+  console.log(`Promotion approval: ${draft.controls.approval_syntax}`);
 }
 
 function taskForEnvelope(envelope) {
@@ -908,6 +1100,86 @@ async function commandTokens(args) {
   if (review.total > worker.total) console.log("- Review runs exceed worker usage; reserve `--review` for decision-grade outputs.");
   if (total.cacheRead < total.total * 0.25) console.log("- Cache-read share is low; repeated tasks may benefit from smaller, stable context manifests.");
   console.log("- `pi-context-tools` is for manual interactive Pi sessions; `hub` keeps extensions disabled for deterministic runs.");
+}
+
+async function financeDraftFiles() {
+  let entries = [];
+  try {
+    entries = await readdir(financeDraftDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+  return entries
+    .filter(entry => entry.isFile() && entry.name.endsWith(".json"))
+    .map(entry => resolve(financeDraftDir, entry.name))
+    .sort()
+    .reverse();
+}
+
+async function commandFinance(args) {
+  const command = args[0];
+  const rest = args.slice(1);
+  if (command === "drafts") {
+    if (rest.length) fail("usage: hub finance drafts");
+    const files = await financeDraftFiles();
+    if (!files.length) {
+      console.log("No finance drafts found.");
+      return;
+    }
+    console.log("STATUS                  TYPE      AMOUNT       CATEGORY                 LANE                         FILE");
+    for (const path of files.slice(0, 30)) {
+      const draft = await readJson(path);
+      const entry = draft.entry || {};
+      const amount = entry.amount === null || entry.amount === undefined
+        ? "needs review"
+        : `${entry.currency || "USD"} ${entry.amount}`;
+      console.log(
+        `${String(draft.status || "unknown").padEnd(23)} ` +
+        `${String(entry.type || "unknown").padEnd(9)} ` +
+        `${amount.padEnd(12)} ` +
+        `${String(entry.category || "unknown").padEnd(24)} ` +
+        `${String(entry.lane || "unknown").padEnd(28)} ` +
+        `${relative(repoRoot, path)}`
+      );
+    }
+    return;
+  }
+  if (command === "draft") {
+    if (rest.length !== 1) fail("usage: hub finance draft <draft-id>");
+    const path = financeDraftPath(rest[0]);
+    let draft;
+    try {
+      draft = await readJson(path);
+    } catch {
+      fail(`unknown finance draft: ${rest[0]}`);
+    }
+    console.log(`Finance draft: ${basename(path)}`);
+    console.log(`Status: ${draft.status || "unknown"}`);
+    console.log(`Created: ${draft.created_at || "unknown"}`);
+    console.log(`Source: ${draft.source?.envelope || "unknown"}`);
+    console.log("");
+    console.log("Entry:");
+    const entry = draft.entry || {};
+    console.log(`- type: ${entry.type || "unknown"}`);
+    console.log(`- amount: ${entry.amount ?? "needs review"} ${entry.currency || ""}`.trim());
+    console.log(`- category: ${entry.category || "unknown"}`);
+    console.log(`- lane: ${entry.lane || "unknown"}`);
+    console.log(`- confidence: ${entry.confidence || "unknown"}`);
+    console.log(`- description: ${entry.description || ""}`);
+    if (entry.review_notes?.length) {
+      console.log("");
+      console.log("Review notes:");
+      for (const note of entry.review_notes) console.log(`- ${note}`);
+    }
+    console.log("");
+    console.log("Controls:");
+    console.log("- Draft only: true");
+    console.log("- Ledger updated: false");
+    console.log(`- Promotion approval: ${draft.controls?.approval_syntax || "missing"}`);
+    return;
+  }
+  fail("usage: hub finance drafts | hub finance draft <draft-id>");
 }
 
 function commandExists(command, args = []) {
@@ -1750,6 +2022,9 @@ async function main() {
       break;
     case "telegram":
       await commandTelegram(args);
+      break;
+    case "finance":
+      await commandFinance(args);
       break;
     case "run":
       await commandRun(args);
