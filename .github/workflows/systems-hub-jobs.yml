@@ -1,10 +1,3 @@
-# GitHub Actions Workflow Template
-
-Copy this into `.github/workflows/systems-hub-jobs.yml` only after Marco approves cloud activation.
-
-Keep `schedule` commented for the first test. Start with manual `workflow_dispatch`.
-
-```yaml
 name: Systems Hub Jobs
 
 on:
@@ -19,19 +12,12 @@ on:
           - daily-agent-recap
           - weekly-business-review
           - social-kpi-report
-  # schedule:
-  #   # GitHub cron is UTC. 00:00 UTC approximates 20:00 New York during EDT.
-  #   - cron: "0 0 * * *"       # daily-agent-recap
-  #   # 12:00 UTC approximates 08:00 New York during EDT.
-  #   - cron: "0 12 * * 1"      # weekly-business-review
-  #   # 23:00 UTC approximates 19:00 New York during EDT.
-  #   - cron: "0 23 * * 0"      # social-kpi-report
 
 permissions:
   contents: read
 
 concurrency:
-  group: systems-hub-${{ github.event.inputs.job_id || github.event.schedule || github.run_id }}
+  group: systems-hub-${{ github.event.inputs.job_id || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -70,20 +56,19 @@ jobs:
           hub job "${{ github.event.inputs.job_id }}" --dry-run
 
       - name: Run selected job
-        run: |
-          hub job "${{ github.event.inputs.job_id }}" --notify
+        run: hub job "${{ github.event.inputs.job_id }}" --notify
 
       - name: Upload run receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: systems-hub-run-receipts
+          name: systems-hub-run-receipts-${{ github.run_id }}
           path: operations/runs/usage/**
-```
+          if-no-files-found: warn
 
-## Notes
-
-- The `Install Pi` step pins `@earendil-works/pi-coding-agent@0.79.4`, matching the local verified Pi version.
-- `permissions.contents` is `read` for the first test so the workflow cannot commit receipts back.
-- Receipt preservation starts as workflow artifacts. Commit-back can be added later after approval.
-- Scheduled cron times are UTC; verify daylight-saving behavior before activation.
+      - name: Notify failure
+        if: failure()
+        run: |
+          node runtime/scripts/telegram-notify.mjs \
+            --channel operations \
+            --text "Systems Hub cloud job failed: ${{ github.event.inputs.job_id }} run ${{ github.run_id }}"

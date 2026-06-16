@@ -21,8 +21,8 @@ This runbook describes the recommended v1 cloud runner. It does not activate sch
 
 1. Confirm `systems-hub-os-v2` is pushed to the private GitHub source-of-truth repo.
 2. Add required secrets in GitHub repository settings.
-3. Add a workflow file from `runtime/scheduler/templates/github-actions-systems-hub-jobs.yml.md`.
-4. Start with `workflow_dispatch` only; keep `schedule` commented out.
+3. Use `.github/workflows/systems-hub-jobs.yml`.
+4. Start with `workflow_dispatch` only; no schedule is active in the v1 workflow.
 5. Run `daily-agent-recap` manually.
 6. Verify:
    - Telegram notification arrived;
@@ -63,6 +63,27 @@ Expected:
 - Operations Telegram receives a recap notification.
 - Artifact contains `operations/runs/usage/...daily-agent-recap...`.
 - `hub telegram health` equivalent in workflow logs shows required channels present without printing secret values.
+
+## Current Workflow
+
+The manual-dispatch workflow is present at `.github/workflows/systems-hub-jobs.yml`.
+
+It:
+
+- installs Node 24;
+- installs `@earendil-works/pi-coding-agent@0.79.4`;
+- links `hub`;
+- verifies `hub status`, `hub telegram health`, and `hub job <job-id> --dry-run`;
+- runs `hub job <job-id> --notify`;
+- uploads run receipts as artifacts;
+- sends an operations Telegram failure notification if the workflow fails.
+
+It does not:
+
+- activate a cron schedule;
+- commit receipts back to the repo;
+- run protected-data jobs;
+- process inbound Telegram envelopes.
 
 ## Schedule Activation Order
 

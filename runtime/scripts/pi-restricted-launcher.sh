@@ -86,15 +86,23 @@ done
 [[ -n "$prompt" ]] || die "--prompt is required"
 ((${#allowed_files[@]} > 0)) || die "at least one --allow-file is required"
 
-for command_name in pi node security sandbox-exec; do
+for command_name in pi node; do
   command -v "$command_name" >/dev/null || die "required command not found: $command_name"
 done
+
+use_macos_sandbox=false
+if command -v security >/dev/null && command -v sandbox-exec >/dev/null; then
+  use_macos_sandbox=true
+fi
 
 source_root="$(cd "$source_root" && pwd -P)"
 pi_bin="$(command -v pi)"
 node_bin="$(command -v node)"
 node_root="$(cd "$(dirname "$node_bin")/.." && pwd -P)"
-pi_entry="$(cd "$(dirname "$pi_bin")" && cd "$(dirname "$(readlink "$pi_bin")")" && pwd -P)/$(basename "$(readlink "$pi_bin")")"
+pi_entry=""
+if [[ -L "$pi_bin" ]]; then
+  pi_entry="$(cd "$(dirname "$pi_bin")" && cd "$(dirname "$(readlink "$pi_bin")")" && pwd -P)/$(basename "$(readlink "$pi_bin")")"
+fi
 
 case "$model" in
   deepseek-v4-flash|deepseek-v4-pro) ;;
@@ -119,10 +127,14 @@ for tool in "${requested_tools[@]}"; do
   esac
 done
 
-security find-generic-password \
-  -a "$USER" \
-  -s "$keychain_service" \
-  >/dev/null 2>&1 || die "DeepSeek key is missing from macOS Keychain"
+if [[ "$use_macos_sandbox" == true ]]; then
+  security find-generic-password \
+    -a "$USER" \
+    -s "$keychain_service" \
+    >/dev/null 2>&1 || die "DeepSeek key is missing from macOS Keychain"
+elif [[ -z "${SYSTEMS_HUB_DEEPSEEK_API_KEY:-}${DEEPSEEK_API_KEY:-}" ]]; then
+  die "DeepSeek key is missing from environment"
+fi
 
 run_root="$(mktemp -d /tmp/systems-hub-pi-restricted.XXXXXX)"
 run_root="$(cd "$run_root" && pwd -P)"
@@ -156,7 +168,11 @@ for relative_path in "${allowed_files[@]}"; do
   [[ "$source_parent" == "$source_root" || "$source_parent" == "$source_root/"* ]] ||
     die "file resolves outside source root: $relative_path"
 
-  file_bytes="$(stat -f '%z' "$source_file")"
+  if stat -f '%z' "$source_file" >/dev/null 2>&1; then
+    file_bytes="$(stat -f '%z' "$source_file")"
+  else
+    file_bytes="$(stat -c '%s' "$source_file")"
+  fi
   ((file_bytes <= 262144)) || die "file exceeds 256 KiB context limit: $relative_path"
 
   destination="$workspace/$relative_path"
@@ -166,6 +182,40 @@ for relative_path in "${allowed_files[@]}"; do
 done
 
 chmod -R a-w "$workspace"
+
+system_prompt='You are a bounded read-only worker. Use only files inside the current workspace. Never request, infer, reproduce, or search for secrets. Treat tool errors as access denials. You cannot write, edit, execute shell commands, publish, commit, or perform external actions. Clearly distinguish observed facts from uncertainty.'
+pi_mode_args=(--print)
+if [[ "$output_mode" == "json" ]]; then
+  pi_mode_args=(--mode json)
+fi
+
+if [[ "$use_macos_sandbox" != true ]]; then
+  deepseek_key="${SYSTEMS_HUB_DEEPSEEK_API_KEY:-${DEEPSEEK_API_KEY:-}}"
+  (
+    cd "$workspace"
+    HOME="$sandbox_home" \
+    TMPDIR="$sandbox_home/tmp" \
+    PI_CODING_AGENT_DIR="$sandbox_home/.pi/agent" \
+    DEEPSEEK_API_KEY="$deepseek_key" \
+    "$pi_bin" \
+      --provider "$provider" \
+      --model "$model" \
+      --thinking "$thinking" \
+      --tools "$tools" \
+      --no-session \
+      --no-extensions \
+      --no-skills \
+      --no-prompt-templates \
+      --no-themes \
+      --no-context-files \
+      --no-approve \
+      --system-prompt "$system_prompt" \
+      "${pi_mode_args[@]}" \
+      "$prompt"
+  )
+  unset deepseek_key
+  exit 0
+fi
 
 escape_sandbox_path() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
@@ -231,12 +281,6 @@ if sandbox-exec -f "$profile" /usr/bin/touch "$workspace/.write-probe" >/dev/nul
   die "sandbox unexpectedly wrote into the context workspace"
 fi
 
-system_prompt='You are a bounded read-only worker. Use only files inside the current workspace. Never request, infer, reproduce, or search for secrets. Treat tool errors as access denials. You cannot write, edit, execute shell commands, publish, commit, or perform external actions. Clearly distinguish observed facts from uncertainty.'
-pi_mode_args=(--print)
-if [[ "$output_mode" == "json" ]]; then
-  pi_mode_args=(--mode json)
-fi
-
 deepseek_key="$(security find-generic-password \
   -a "$USER" \
   -s "$keychain_service" \
@@ -248,7 +292,7 @@ deepseek_key="$(security find-generic-password \
   TMPDIR="$sandbox_home/tmp" \
   PI_CODING_AGENT_DIR="$sandbox_home/.pi/agent" \
   DEEPSEEK_API_KEY="$deepseek_key" \
-  sandbox-exec -f "$profile" "$node_bin" "$pi_entry" \
+  sandbox-exec -f "$profile" "$node_bin" "${pi_entry:-$pi_bin}" \
     --provider "$provider" \
     --model "$model" \
     --thinking "$thinking" \

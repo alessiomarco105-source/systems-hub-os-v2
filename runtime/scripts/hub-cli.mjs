@@ -939,13 +939,14 @@ async function commandStatus() {
   } catch {
     // Reported below.
   }
-  const keyPresent = commandExists("security", [
-    "find-generic-password",
-    "-a",
-    process.env.USER || "",
-    "-s",
-    "systems-hub-deepseek-api"
-  ]);
+  const keyPresent = Boolean(process.env.SYSTEMS_HUB_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY) ||
+    commandExists("security", [
+      "find-generic-password",
+      "-a",
+      process.env.USER || "",
+      "-s",
+      "systems-hub-deepseek-api"
+    ]);
   console.log("Systems Hub CLI status");
   console.log(`Repository: ${repoRoot}`);
   console.log(`Git: ${branch}@${commit} dirty=${dirty}`);
